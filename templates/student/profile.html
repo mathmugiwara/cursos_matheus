@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Meu Progresso — MatheusDevCursos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner" style="display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <h1><i data-lucide="trending-up" style="width:22px;height:22px;display:inline;vertical-align:middle;"></i> Meu Progresso</h1>
+      <p>Acompanhe sua evolução e veja o que você já domina.</p>
+    </div>
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+  </div>
+</div>
+
+<div class="page-body">
+<div class="page-body-inner">
+  <div class="profile-grid">
+
+    <!-- Profile Card -->
+    <div>
+      <div class="profile-card">
+        <div class="profile-avatar">{{ current_user.username[0].upper() }}</div>
+        <h2>{{ current_user.username }}</h2>
+        <p>{{ current_user.email or 'Aluno' }}</p>
+        <p style="font-size:0.75rem; color:var(--text3); margin-top:0.25rem;">
+          Desde {{ current_user.created_at.strftime('%b/%Y') }}
+        </p>
+
+        <div class="profile-stats">
+          <div class="profile-stat">
+            <span class="val">{{ stats.modules }}</span>
+            <span class="lbl">Módulo{{ 's' if stats.modules != 1 }}</span>
+          </div>
+          <div class="profile-stat">
+            <span class="val" style="color:var(--green);">{{ stats.completed_lessons }}</span>
+            <span class="lbl">Aulas feitas</span>
+          </div>
+          <div class="profile-stat">
+            <span class="val" style="color:var(--cyan);">{{ stats.passed_ex }}</span>
+            <span class="lbl">Exercícios ok</span>
+          </div>
+          <div class="profile-stat">
+            <span class="val" style="color:var(--orange);">
+              {% if stats.total_lessons > 0 %}{{ ((stats.completed_lessons / stats.total_lessons) * 100)|int }}%{% else %}0%{% endif %}
+            </span>
+            <span class="lbl">Conclusão</span>
+          </div>
+        </div>
+
+        <!-- Level badge -->
+        {% set pct = ((stats.completed_lessons / stats.total_lessons) * 100)|int if stats.total_lessons > 0 else 0 %}
+        <div style="margin-top:1.5rem; padding:1rem; background:var(--bg2); border-radius:var(--radius); text-align:center;">
+          {% if pct == 100 %}
+            <i data-lucide="trophy" style="width:28px;height:28px;color:var(--orange);"></i>
+            <div style="font-size:0.85rem; font-weight:700; color:var(--orange); margin-top:0.25rem;">Mestre!</div>
+          {% elif pct >= 75 %}
+            <i data-lucide="award" style="width:28px;height:28px;color:var(--cyan);"></i>
+            <div style="font-size:0.85rem; font-weight:700; color:var(--cyan); margin-top:0.25rem;">Avançado</div>
+          {% elif pct >= 50 %}
+            <i data-lucide="star" style="width:28px;height:28px;color:var(--primary-light);"></i>
+            <div style="font-size:0.85rem; font-weight:700; color:var(--primary-light); margin-top:0.25rem;">Intermediário</div>
+          {% elif pct >= 25 %}
+            <i data-lucide="flame" style="width:28px;height:28px;color:var(--text2);"></i>
+            <div style="font-size:0.85rem; font-weight:700; color:var(--text2); margin-top:0.25rem;">Iniciando</div>
+          {% else %}
+            <i data-lucide="sprout" style="width:28px;height:28px;color:var(--green);"></i>
+            <div style="font-size:0.85rem; font-weight:700; color:var(--green); margin-top:0.25rem;">Começando</div>
+          {% endif %}
+          <div style="font-size:0.72rem; color:var(--text3); margin-top:0.25rem;">Nível atual</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right side -->
+    <div>
+      <!-- Modules progress -->
+      <div class="section-card" style="margin-bottom:1.25rem;">
+        <div class="section-card-header"><i data-lucide="book-open" style="width:16px;height:16px;display:inline;vertical-align:middle;"></i> Módulos</div>
+        <div class="section-card-body">
+          {% for item in modules_summary %}
+            <div style="margin-bottom:1.5rem; {% if not loop.last %}padding-bottom:1.5rem; border-bottom:1px solid var(--border);{% endif %}">
+              <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+                <span style="font-size:1.2rem;">{{ item.module.icon }}</span>
+                <div style="flex:1;">
+                  <div style="font-size:0.9rem; font-weight:700; color:var(--text);">{{ item.module.short_name or item.module.name }}</div>
+                  <div style="font-size:0.75rem; color:var(--text3);">{{ item.completed }}/{{ item.total }} aulas · {{ item.ex_passed }}/{{ item.ex_total }} exercícios</div>
+                </div>
+                <span class="badge {{ 'badge-green' if item.progress == 100 else 'badge-blue' if item.progress >= 50 else 'badge-purple' }}">
+                  {{ item.progress }}%
+                </span>
+              </div>
+              <div class="progress-bar-track" style="height:6px;">
+                <div class="progress-bar-fill {{ item.module.color }}" data-width="{{ item.progress }}%" style="width:{{ item.progress }}%;"></div>
+              </div>
+
+              <!-- Lessons breakdown -->
+              {% if item.total > 0 %}
+                <div style="display:flex; gap:0.4rem; margin-top:0.75rem; flex-wrap:wrap;">
+                  {% for lesson in item.module.lessons %}
+                    {% set done = lesson.id in (current_user.progress | map(attribute='lesson_id') | list) %}
+                    <div style="width:24px; height:24px; border-radius:6px; background:{{ 'rgba(16,185,129,0.25)' if done else 'var(--bg2)' }}; border:1px solid {{ 'rgba(16,185,129,0.4)' if done else 'var(--border)' }}; display:flex; align-items:center; justify-content:center; font-size:0.65rem; color:{{ 'var(--green)' if done else 'var(--text3)' }};" title="{{ lesson.title }}">
+                      {{ '✓' if done else loop.index }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          {% else %}
+            <p style="color:var(--text3); font-size:0.85rem;">Nenhum módulo disponível.</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Recent submissions -->
+      {% if recent %}
+        <div class="section-card">
+          <div class="section-card-header"><i data-lucide="zap" style="width:16px;height:16px;display:inline;vertical-align:middle;"></i> Últimas Submissões</div>
+          <div style="padding:0 0 0.5rem;">
+            {% for sub in recent %}
+              <div style="display:flex; align-items:center; gap:0.75rem; padding:0.85rem 1.5rem; border-bottom:1px solid var(--border);">
+                <span>{% if sub.passed %}<i data-lucide="check-circle" style="width:18px;height:18px;color:var(--green);"></i>{% else %}<i data-lucide="x-circle" style="width:18px;height:18px;color:#f87171;"></i>{% endif %}</span>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:0.82rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    {{ sub.exercise.title }}
+                  </div>
+                  <div style="font-size:0.72rem; color:var(--text3);">
+                    {{ sub.exercise.lesson.title }} · {{ sub.submitted_at.strftime('%d/%m %H:%M') }}
+                  </div>
+                </div>
+                <span class="badge {{ 'badge-green' if sub.passed else 'badge-red' }}">
+                  {{ 'Passou' if sub.passed else 'Falhou' }}
+                </span>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}

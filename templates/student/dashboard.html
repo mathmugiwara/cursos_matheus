@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Início — MatheusDevCursos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner" style="display:flex; align-items:center; justify-content:space-between;">
+    <div>
+      <h1>Olá, {{ current_user.username }}</h1>
+      <p>Continue de onde parou. Cada linha de código te aproxima do próximo nível.</p>
+    </div>
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+  </div>
+</div>
+
+<div class="page-body">
+<div class="page-body-inner">
+
+  {% if modules_data %}
+    <!-- Summary bar -->
+    {% set total_progress = namespace(val=0) %}
+    {% for m in modules_data %}{% set total_progress.val = total_progress.val + m.progress %}{% endfor %}
+    {% set avg = (total_progress.val / modules_data|length)|int %}
+
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.5rem; margin-bottom:2rem; display:flex; align-items:center; gap:2rem; flex-wrap:wrap;">
+      <div style="flex:1; min-width:200px;">
+        <div style="font-size:0.8rem; color:var(--text2); margin-bottom:0.4rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Progresso Geral</div>
+        <div style="display:flex; align-items:center; gap:1rem;">
+          <div class="progress-bar-track" style="flex:1; height:8px;">
+            <div class="progress-bar-fill purple" data-width="{{ avg }}%" style="width:{{ avg }}%;"></div>
+          </div>
+          <strong style="font-size:1.1rem; color:var(--text);">{{ avg }}%</strong>
+        </div>
+      </div>
+      <div style="display:flex; gap:2rem; flex-wrap:wrap;">
+        <div style="text-align:center;">
+          <div style="font-size:1.5rem; font-weight:800; color:var(--text);">{{ modules_data|length }}</div>
+          <div style="font-size:0.72rem; color:var(--text3);">Módulo{{ 's' if modules_data|length > 1 }}</div>
+        </div>
+        {% set total_done = namespace(val=0) %}
+        {% set total_lessons = namespace(val=0) %}
+        {% for m in modules_data %}
+          {% set total_done.val = total_done.val + m.completed %}
+          {% set total_lessons.val = total_lessons.val + m.total %}
+        {% endfor %}
+        <div style="text-align:center;">
+          <div style="font-size:1.5rem; font-weight:800; color:var(--green);">{{ total_done.val }}</div>
+          <div style="font-size:0.72rem; color:var(--text3);">Aulas Concluídas</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:1.5rem; font-weight:800; color:var(--text2);">{{ total_lessons.val }}</div>
+          <div style="font-size:0.72rem; color:var(--text3);">Total de Aulas</div>
+        </div>
+      </div>
+    </div>
+
+    <h2 style="font-size:1rem; font-weight:700; color:var(--text2); margin-bottom:1.25rem; text-transform:uppercase; letter-spacing:0.05em;">Seus Módulos</h2>
+
+    <div class="modules-grid">
+      {% for item in modules_data %}
+        {% set mod = item.module %}
+        {% set color = mod.color %}
+        <a href="{{ url_for('module_view', module_id=mod.id) }}" class="module-card {{ color }}-card">
+          <div class="module-card-top">
+            <div class="module-icon-wrap {{ color }}">{{ mod.icon }}</div>
+            <span class="module-level {{ color }}">{{ mod.level }}</span>
+          </div>
+          <h3>{{ mod.name }}</h3>
+          <p>{{ mod.description }}</p>
+          <div class="progress-row">
+            <span class="progress-label">{{ item.completed }}/{{ item.total }} aulas</span>
+            <span class="progress-pct">{{ item.progress }}%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill {{ color }}" data-width="{{ item.progress }}%" style="width:{{ item.progress }}%;"></div>
+          </div>
+          <div class="module-meta">
+            <span><i data-lucide="clock" style="width:13px;height:13px;display:inline;vertical-align:middle;"></i> {{ mod.duration }}</span>
+            {% if item.progress == 100 %}
+              <span style="color:var(--green); margin-left:auto;"><i data-lucide="check-circle" style="width:14px;height:14px;display:inline;vertical-align:middle;"></i> Concluído!</span>
+            {% elif item.progress > 0 %}
+              <span style="color:var(--primary-light); margin-left:auto;"><i data-lucide="play" style="width:14px;height:14px;display:inline;vertical-align:middle;"></i> Em andamento</span>
+            {% else %}
+              <span style="color:var(--text3); margin-left:auto;"><i data-lucide="arrow-right" style="width:14px;height:14px;display:inline;vertical-align:middle;"></i> Começar</span>
+            {% endif %}
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <div class="empty-state">
+      <i data-lucide="book-open" style="width:48px;height:48px;color:var(--text3);margin-bottom:1rem;"></i>
+      <h3>Nenhum módulo disponível ainda</h3>
+      <p>Aguarde o instrutor liberar seu acesso aos módulos.</p>
+      <p style="margin-top:0.5rem; font-size:0.8rem;">Entre em contato com <strong>Matheus</strong> para adquirir um módulo.</p>
+    </div>
+  {% endif %}
+
+</div>
+</div>
+{% endblock %}

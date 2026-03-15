@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Exercícios — {{ lesson.title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner" style="display:flex; align-items:center; gap:1rem;">
+    <a href="{{ url_for('lesson_view', lesson_id=lesson.id) }}" class="btn-sm secondary">← Voltar à Aula</a>
+    <div>
+      <h1>Exercícios</h1>
+      <p>{{ lesson.title }} · {{ mod.short_name or mod.name }}</p>
+    </div>
+    <button class="mobile-toggle" style="margin-left:auto;" onclick="toggleSidebar()">☰</button>
+  </div>
+</div>
+
+<div class="page-body">
+<div class="page-body-inner">
+  <div class="exercises-page">
+
+    <div class="exercises-header-page">
+      <h2><i data-lucide="code-2" style="width:20px;height:20px;display:inline;vertical-align:middle;"></i> {{ lesson.exercises|length }} exercício{{ 's' if lesson.exercises|length > 1 }}</h2>
+      <p>Resolva todos os exercícios para poder concluir a aula.</p>
+    </div>
+
+    {% for ex in lesson.exercises %}
+      <div class="exercise-card" id="exercise-{{ ex.id }}">
+        <div class="exercise-card-header">
+          <h3>{{ loop.index }}. {{ ex.title }}</h3>
+          <div style="display:flex;align-items:center;gap:0.75rem;">
+            {% if ex_passed.get(ex.id) %}
+              <span class="badge badge-green"><i data-lucide="check" style="width:12px;height:12px;display:inline;vertical-align:middle;"></i> Passou</span>
+            {% endif %}
+            <span class="ex-pts">{{ ex.points }} pts</span>
+          </div>
+        </div>
+        <div class="exercise-card-body">
+          <div class="ex-description">
+            <p>{{ ex.description }}</p>
+          </div>
+
+          {% if ex.hint %}
+            <div class="ex-hint" id="hint-{{ ex.id }}">
+              <strong>Dica:</strong> {{ ex.hint }}
+            </div>
+          {% endif %}
+
+          <div class="editor-wrap">
+            <div class="editor-toolbar">
+              <span>Python 3</span>
+              <span>Ctrl+Enter para executar</span>
+            </div>
+            <textarea id="editor-{{ ex.id }}">{{ ex_last_code.get(ex.id, '') }}</textarea>
+          </div>
+
+          <div class="ex-actions">
+            <button class="btn-run" id="run-btn-{{ ex.id }}"
+                    onclick="submitExercise({{ ex.id }}, editors[{{ ex.id }}])">
+              <i data-lucide="play" style="width:14px;height:14px;"></i> Executar
+            </button>
+            {% if ex.hint %}
+              <button class="btn-hint" onclick="toggleHint({{ ex.id }})">
+                <i data-lucide="lightbulb" style="width:14px;height:14px;display:inline;vertical-align:middle;"></i> Dica
+              </button>
+            {% endif %}
+          </div>
+
+          <div class="result-banner" id="banner-{{ ex.id }}"></div>
+          <div class="ex-output" id="output-{{ ex.id }}"></div>
+        </div>
+      </div>
+    {% endfor %}
+
+    <!-- Complete lesson -->
+    <div class="complete-lesson-bar">
+      {% if is_completed %}
+        <div class="lesson-completed-badge"><i data-lucide="check-circle" style="width:18px;height:18px;display:inline;vertical-align:middle;"></i> Aula Concluída!</div>
+      {% else %}
+        <button class="btn-complete" id="btn-complete-lesson"
+                onclick="completeLesson({{ lesson.id }})"
+                {{ 'disabled' if not all_done }}>
+          {% if not all_done %}
+            <i data-lucide="lock" style="width:16px;height:16px;"></i> Resolva todos os exercícios para concluir
+          {% else %}
+            <i data-lucide="check" style="width:16px;height:16px;"></i> Marcar Aula como Concluída
+          {% endif %}
+        </button>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const editors = {};
+
+{% for ex in lesson.exercises %}
+editors[{{ ex.id }}] = CodeMirror.fromTextArea(document.getElementById('editor-{{ ex.id }}'), {
+  mode: 'python',
+  theme: 'dracula',
+  lineNumbers: true,
+  autoCloseBrackets: true,
+  matchBrackets: true,
+  indentUnit: 4,
+  tabSize: 4,
+  indentWithTabs: false,
+  extraKeys: {
+    'Tab': function(cm) { cm.replaceSelection('    ', 'end'); },
+    'Ctrl-Enter': function(cm) { submitExercise({{ ex.id }}, editors[{{ ex.id }}]); },
+    'Cmd-Enter': function(cm) { submitExercise({{ ex.id }}, editors[{{ ex.id }}]); }
+  }
+});
+editors[{{ ex.id }}].setSize(null, 260);
+{% endfor %}
+
+checkAllExercisesDone();
+if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}

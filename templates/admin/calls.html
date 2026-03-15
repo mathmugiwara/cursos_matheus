@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Calls — Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner" style="display:flex; align-items:center; justify-content:space-between;">
+    <div>
+      <h1><i data-lucide="calendar-clock" style="width:22px;height:22px;display:inline;vertical-align:middle;"></i> Gerenciar Calls</h1>
+      <p>Veja agendamentos e configure sua disponibilidade.</p>
+    </div>
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+  </div>
+</div>
+
+<div class="page-body">
+<div class="page-body-inner">
+
+  <div style="display:grid; grid-template-columns:1fr 380px; gap:1.25rem; align-items:start;">
+
+    <!-- Calls List -->
+    <div class="section-card">
+      <div class="section-card-header">
+        <i data-lucide="list" style="width:16px;height:16px;"></i> Calls Agendadas
+      </div>
+      <div>
+        {% if calls %}
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Aluno</th>
+                <th>Módulo / Semana</th>
+                <th>Data</th>
+                <th>Horário</th>
+                <th>Discord</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for call in calls %}
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                      <div class="user-avatar" style="width:28px;height:28px;font-size:0.7rem;border-radius:6px;">{{ call.user_rel.username[0].upper() }}</div>
+                      <span style="font-weight:600;color:var(--text);">{{ call.user_rel.username }}</span>
+                    </div>
+                  </td>
+                  <td style="font-size:0.82rem;">
+                    {% if call.module_rel %}
+                      <div style="font-weight:600;color:var(--text);">{{ call.module_rel.icon }} {{ call.module_rel.name }}</div>
+                      {% if call.week_number %}<div style="color:var(--text3);">Semana {{ call.week_number }}</div>{% endif %}
+                      {% if call.notes %}<div style="color:var(--text3);font-style:italic;margin-top:0.2rem;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ call.notes }}">{{ call.notes }}</div>{% endif %}
+                    {% else %}
+                      <span style="color:var(--text3);">—</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ call.scheduled_date.strftime('%d/%m/%Y') }}</td>
+                  <td>{{ call.scheduled_time }}h</td>
+                  <td style="font-size:0.82rem;">{{ call.discord_username or '—' }}</td>
+                  <td>
+                    <span class="call-status {{ call.status }}">{{ call.status }}</span>
+                  </td>
+                  <td>
+                    <div style="display:flex;gap:0.25rem;">
+                      {% if call.status == 'pending' %}
+                        <form method="POST" action="{{ url_for('admin_update_call_status') }}" style="display:inline;">
+                          <input type="hidden" name="call_id" value="{{ call.id }}">
+                          <input type="hidden" name="status" value="confirmed">
+                          <button type="submit" class="btn-sm primary" title="Confirmar">
+                            <i data-lucide="check" style="width:12px;height:12px;"></i>
+                          </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_update_call_status') }}" style="display:inline;">
+                          <input type="hidden" name="call_id" value="{{ call.id }}">
+                          <input type="hidden" name="status" value="cancelled">
+                          <button type="submit" class="btn-sm danger" title="Cancelar">
+                            <i data-lucide="x" style="width:12px;height:12px;"></i>
+                          </button>
+                        </form>
+                      {% elif call.status == 'confirmed' %}
+                        <form method="POST" action="{{ url_for('admin_update_call_status') }}" style="display:inline;">
+                          <input type="hidden" name="call_id" value="{{ call.id }}">
+                          <input type="hidden" name="status" value="completed">
+                          <button type="submit" class="btn-sm primary" title="Marcar como realizada">
+                            <i data-lucide="check-circle" style="width:12px;height:12px;"></i> Feita
+                          </button>
+                        </form>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="empty-state" style="padding:2rem;">
+            <i data-lucide="calendar-x" style="width:32px;height:32px;margin-bottom:0.5rem;"></i>
+            <p>Nenhuma call agendada.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Availability Calendar UI -->
+    <div class="section-card">
+      <div class="section-card-header">
+        <i data-lucide="clock" style="width:16px;height:16px;"></i> Sua Disponibilidade
+      </div>
+      <div class="section-card-body">
+        <p style="font-size:0.82rem;color:var(--text3);margin-bottom:1rem;">Ative os dias e defina os horários disponíveis para calls.</p>
+
+        {% set days_list = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'] %}
+        {% set avail_days = {} %}
+        {% for a in availability %}
+          {% if avail_days.update({a.day_of_week: {'start': a.start_time, 'end': a.end_time}}) %}{% endif %}
+        {% endfor %}
+
+        <form method="POST" action="{{ url_for('admin_set_availability') }}">
+          <div class="avail-calendar">
+            {% for day_name in days_list %}
+              {% set day_idx = loop.index0 %}
+              {% set is_on = day_idx in avail_days %}
+              <div class="avail-day-row">
+                <span class="avail-day-label">{{ day_name }}</span>
+                <label class="avail-toggle {{ 'on' if is_on }}" for="day_{{ day_idx }}_on" id="toggle_{{ day_idx }}" onclick="toggleAvailDay({{ day_idx }})">
+                  <input type="checkbox" name="day_{{ day_idx }}_on" id="day_{{ day_idx }}_on" value="1" {{ 'checked' if is_on }} style="display:none;">
+                </label>
+                <div class="avail-time-inputs" id="times_{{ day_idx }}" style="{{ '' if is_on else 'opacity:0.35;pointer-events:none;' }}">
+                  <input type="time" name="day_{{ day_idx }}_start" value="{{ avail_days[day_idx].start if is_on else '09:00' }}">
+                  <span>até</span>
+                  <input type="time" name="day_{{ day_idx }}_end" value="{{ avail_days[day_idx].end if is_on else '18:00' }}">
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+          <div style="margin-top:1.25rem;">
+            <button type="submit" class="btn-primary" style="width:100%;">
+              <i data-lucide="save" style="width:14px;height:14px;display:inline;vertical-align:middle;"></i> Salvar Disponibilidade
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleAvailDay(day) {
+  const cb = document.getElementById('day_' + day + '_on');
+  const toggle = document.getElementById('toggle_' + day);
+  const times = document.getElementById('times_' + day);
+  cb.checked = !cb.checked;
+  if (cb.checked) {
+    toggle.classList.add('on');
+    times.style.opacity = '1';
+    times.style.pointerEvents = 'auto';
+  } else {
+    toggle.classList.remove('on');
+    times.style.opacity = '0.35';
+    times.style.pointerEvents = 'none';
+  }
+}
+if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}

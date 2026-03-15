@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Minha Conta — MatheusDevCursos{% endblock %}
+
+{% block extra_css %}
+<style>
+.account-grid { display: grid; grid-template-columns: 300px 1fr; gap: 1.5rem; align-items: start; }
+.account-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.account-card-header {
+  padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+  font-size: 0.82rem; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.account-card-header i { width: 16px; height: 16px; color: var(--primary); }
+.account-card-body { padding: 1.25rem; }
+
+.profile-avatar-lg {
+  width: 64px; height: 64px; border-radius: 16px;
+  background: var(--gradient);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; font-weight: 800; color: #fff;
+  margin: 0 auto 1rem;
+}
+.profile-name { text-align: center; font-size: 1.05rem; font-weight: 700; color: var(--text); }
+.profile-email { text-align: center; font-size: 0.82rem; color: var(--text3); margin-top: 0.2rem; }
+.profile-since { text-align: center; font-size: 0.72rem; color: var(--text3); margin-top: 0.35rem; }
+
+.mini-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-top: 1.25rem; }
+.mini-stat {
+  background: var(--bg2); border-radius: var(--radius); padding: 0.65rem;
+  text-align: center;
+}
+.mini-stat .val { font-size: 1.1rem; font-weight: 800; color: var(--text); display: block; }
+.mini-stat .lbl { font-size: 0.68rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.form-section { margin-bottom: 1.5rem; }
+.form-section:last-child { margin-bottom: 0; }
+.form-section-title {
+  font-size: 0.72rem; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.4rem;
+}
+.form-section-title i { width: 14px; height: 14px; }
+
+.form-row { margin-bottom: 0.85rem; }
+.form-row label {
+  display: block; font-size: 0.78rem; font-weight: 600;
+  color: var(--text2); margin-bottom: 0.35rem;
+}
+.form-row input {
+  width: 100%; padding: 0.65rem 0.85rem;
+  background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-size: 0.88rem; outline: none; transition: border-color 0.2s;
+}
+.form-row input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+.form-row input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.form-row .hint { font-size: 0.72rem; color: var(--text3); margin-top: 0.3rem; }
+
+.btn-save {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.6rem 1.25rem; border-radius: var(--radius);
+  background: var(--gradient); border: none;
+  color: #fff; font-size: 0.84rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-save:hover { transform: translateY(-1px); box-shadow: 0 4px 12px var(--primary-glow); }
+
+.btn-outline {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.6rem 1.25rem; border-radius: var(--radius);
+  background: transparent; border: 1.5px solid var(--border);
+  color: var(--text2); font-size: 0.84rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+.divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+
+@media (max-width: 768px) {
+  .account-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner" style="display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <h1><i data-lucide="user-cog" style="width:22px;height:22px;display:inline;vertical-align:middle;"></i> Minha Conta</h1>
+      <p>Gerencie seu perfil e altere sua senha.</p>
+    </div>
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+  </div>
+</div>
+
+<div class="page-body">
+<div class="page-body-inner">
+  <div class="account-grid">
+
+    <!-- Left: profile card -->
+    <div>
+      <div class="account-card">
+        <div class="account-card-body" style="text-align:center;">
+          <div class="profile-avatar-lg">{{ current_user.username[0].upper() }}</div>
+          <div class="profile-name">{{ current_user.username }}</div>
+          <div class="profile-email">{{ current_user.email or 'Sem e-mail cadastrado' }}</div>
+          <div class="profile-since">
+            <i data-lucide="calendar" style="width:11px;height:11px;display:inline;vertical-align:middle;"></i>
+            Membro desde {{ current_user.created_at.strftime('%d/%m/%Y') }}
+          </div>
+
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <span class="val">{{ stats.modules }}</span>
+              <span class="lbl">Módulos</span>
+            </div>
+            <div class="mini-stat">
+              <span class="val" style="color:var(--green);">{{ stats.completed_lessons }}</span>
+              <span class="lbl">Aulas</span>
+            </div>
+            <div class="mini-stat">
+              <span class="val" style="color:var(--cyan);">
+                {% if stats.total_lessons > 0 %}{{ ((stats.completed_lessons / stats.total_lessons) * 100)|int }}%{% else %}0%{% endif %}
+              </span>
+              <span class="lbl">Conclusão</span>
+            </div>
+            <div class="mini-stat">
+              <span class="val" style="color:var(--orange);">{{ stats.calls }}</span>
+              <span class="lbl">Calls</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: settings forms -->
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+
+      <!-- Update email -->
+      <div class="account-card">
+        <div class="account-card-header">
+          <i data-lucide="mail"></i> Informações do Perfil
+        </div>
+        <div class="account-card-body">
+          <form method="POST" action="{{ url_for('minha_conta') }}">
+            <input type="hidden" name="action" value="update_profile">
+            <div class="form-row">
+              <label>Usuário</label>
+              <input type="text" value="{{ current_user.username }}" disabled>
+              <p class="hint">O nome de usuário não pode ser alterado.</p>
+            </div>
+            <div class="form-row">
+              <label>E-mail</label>
+              <input type="email" name="email" value="{{ current_user.email or '' }}" placeholder="seu@email.com">
+            </div>
+            <button type="submit" class="btn-save">
+              <i data-lucide="save" style="width:14px;height:14px;"></i> Salvar
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Change password -->
+      <div class="account-card">
+        <div class="account-card-header">
+          <i data-lucide="lock"></i> Alterar Senha
+        </div>
+        <div class="account-card-body">
+          <form method="POST" action="{{ url_for('minha_conta') }}">
+            <input type="hidden" name="action" value="change_password">
+            <div class="form-row">
+              <label>Senha Atual</label>
+              <input type="password" name="current_password" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+            <div class="form-row">
+              <label>Nova Senha</label>
+              <input type="password" name="new_password" placeholder="Mínimo 6 caracteres" required autocomplete="new-password">
+              <p class="hint">Use letras, números e símbolos para uma senha forte.</p>
+            </div>
+            <div class="form-row">
+              <label>Confirmar Nova Senha</label>
+              <input type="password" name="confirm_password" placeholder="Repita a nova senha" required autocomplete="new-password">
+            </div>
+            <button type="submit" class="btn-save">
+              <i data-lucide="shield-check" style="width:14px;height:14px;"></i> Alterar Senha
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}

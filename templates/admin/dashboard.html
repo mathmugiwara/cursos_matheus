@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Admin — MatheusDevCursos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner" style="display:flex; align-items:center; justify-content:space-between;">
+    <div>
+      <h1><i data-lucide="layout-dashboard" style="width:22px;height:22px;display:inline;vertical-align:middle;"></i> Dashboard Admin</h1>
+      <p>Visão geral da plataforma</p>
+    </div>
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+  </div>
+</div>
+
+<div class="page-body">
+<div class="page-body-inner">
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card purple">
+      <div class="stat-icon"><i data-lucide="users" style="width:24px;height:24px;"></i></div>
+      <div class="stat-value">{{ total_students }}</div>
+      <div class="stat-label">Alunos</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon"><i data-lucide="wallet" style="width:24px;height:24px;"></i></div>
+      <div class="stat-value">R$ {{ "%.0f"|format(total_revenue) }}</div>
+      <div class="stat-label">Receita Total</div>
+    </div>
+    <div class="stat-card cyan">
+      <div class="stat-icon"><i data-lucide="graduation-cap" style="width:24px;height:24px;"></i></div>
+      <div class="stat-value">{{ total_sales }}</div>
+      <div class="stat-label">Módulos Vendidos</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-icon"><i data-lucide="trending-up" style="width:24px;height:24px;"></i></div>
+      <div class="stat-value">
+        {% if total_sales > 0 %}R$ {{ "%.0f"|format(total_revenue / total_sales) }}{% else %}—{% endif %}
+      </div>
+      <div class="stat-label">Ticket Médio</div>
+    </div>
+  </div>
+
+  <!-- Charts + Module Stats -->
+  <div style="display:grid; grid-template-columns:1fr 360px; gap:1.5rem; margin-bottom:1.5rem; align-items:start;">
+
+    <!-- Revenue Chart -->
+    <div class="section-card" style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);">
+      <div class="section-card-header"><i data-lucide="calendar" style="width:16px;height:16px;display:inline;vertical-align:middle;"></i> Receita por Mês</div>
+      <div class="section-card-body">
+        <div class="chart-container">
+          <canvas id="revenueChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module breakdown -->
+    <div class="section-card" style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);">
+      <div class="section-card-header"><i data-lucide="target" style="width:16px;height:16px;display:inline;vertical-align:middle;"></i> Por Módulo</div>
+      <div style="padding:1rem;">
+        {% for item in module_stats %}
+          <div style="padding:0.75rem 0; {{ 'border-bottom:1px solid var(--border);' if not loop.last }}">
+            <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
+              <span style="font-size:1.1rem;">{{ item.module.icon }}</span>
+              <div style="flex:1;">
+                <div style="font-size:0.82rem; font-weight:700; color:var(--text);">{{ item.module.short_name }}</div>
+                <div style="font-size:0.72rem; color:var(--text3);">{{ item.count }} aluno{{ 's' if item.count != 1 }}</div>
+              </div>
+              <strong style="color:var(--green); font-size:0.9rem;">R$ {{ "%.0f"|format(item.revenue) }}</strong>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Students -->
+  <div class="section-card" style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);">
+    <div class="section-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <span><i data-lucide="users" style="width:16px;height:16px;display:inline;vertical-align:middle;"></i> Alunos Recentes</span>
+      <a href="{{ url_for('admin_students') }}" class="btn-sm secondary">Ver todos</a>
+    </div>
+    <div>
+      {% if recent_students %}
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Aluno</th>
+              <th>Cadastro</th>
+              <th>Módulos</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in recent_students %}
+              <tr>
+                <td>
+                  <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div class="user-avatar" style="width:32px; height:32px; font-size:0.8rem; border-radius:8px;">
+                      {{ student.username[0].upper() }}
+                    </div>
+                    <div>
+                      <div style="font-weight:600; color:var(--text); font-size:0.88rem;">{{ student.username }}</div>
+                      <div style="font-size:0.72rem; color:var(--text3);">{{ student.email or '—' }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="font-size:0.82rem;">{{ student.created_at.strftime('%d/%m/%Y') }}</td>
+                <td>
+                  {% for um in student.modules %}
+                    <span class="badge badge-purple">{{ um.module.icon }}</span>
+                  {% else %}
+                    <span style="color:var(--text3); font-size:0.8rem;">—</span>
+                  {% endfor %}
+                </td>
+                <td>
+                  <a href="{{ url_for('admin_student_detail', student_id=student.id) }}" class="btn-sm secondary">Ver</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty-state" style="padding:2rem;">
+          <i data-lucide="users" style="width:32px;height:32px;color:var(--text3);"></i>
+          <p>Nenhum aluno ainda.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const monthly = {{ monthly_data|safe }};
+
+const rootStyle = getComputedStyle(document.documentElement);
+const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)';
+const tickColor = isLight ? '#475569' : '#94a3b8';
+
+const ctx = document.getElementById('revenueChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: monthly.map(d => d.month),
+    datasets: [{
+      label: 'Receita (R$)',
+      data: monthly.map(d => d.revenue),
+      backgroundColor: 'rgba(124,58,237,0.4)',
+      borderColor: 'rgba(124,58,237,0.8)',
+      borderWidth: 2,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: { label: ctx => `R$ ${ctx.parsed.y.toFixed(2)}` }
+      }
+    },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } } },
+      y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 },
+           callback: v => `R$ ${v}` } }
+    }
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ mod.name }} — MatheusDevCursos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner" style="display:flex; align-items:center; gap:1rem;">
+    <a href="{{ url_for('dashboard') }}" class="btn-sm secondary">← Voltar</a>
+    <div>
+      <h1>{{ mod.short_name or mod.name }}</h1>
+      <p>{{ mod.duration }} · {{ mod.level }}</p>
+    </div>
+    <button class="mobile-toggle" style="margin-left:auto;" onclick="toggleSidebar()">☰</button>
+  </div>
+</div>
+
+<div class="page-body">
+<div class="page-body-inner">
+  <!-- Module progress overview -->
+  {% set completed_count = lessons_data | selectattr('completed') | list | length %}
+  {% set total_count = lessons_data | length %}
+  {% set pct = ((completed_count / total_count) * 100)|int if total_count > 0 else 0 %}
+
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.5rem; margin-bottom:2rem;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:0.75rem;">
+      <div>
+        <div style="font-size:0.8rem; color:var(--text2); margin-bottom:0.2rem;">Seu progresso no módulo</div>
+        <div style="font-size:1.8rem; font-weight:800; color:var(--text);">{{ pct }}%
+          {% if pct == 100 %}<span style="font-size:1rem; color:var(--green);">🎉 Concluído!</span>{% endif %}
+        </div>
+      </div>
+      <div style="display:flex; gap:1.5rem; text-align:center;">
+        <div>
+          <div style="font-size:1.5rem; font-weight:800; color:var(--green);">{{ completed_count }}</div>
+          <div style="font-size:0.72rem; color:var(--text3);">Concluídas</div>
+        </div>
+        <div>
+          <div style="font-size:1.5rem; font-weight:800; color:var(--text2);">{{ total_count - completed_count }}</div>
+          <div style="font-size:0.72rem; color:var(--text3);">Restantes</div>
+        </div>
+      </div>
+    </div>
+    <div class="progress-bar-track" style="height:8px;">
+      <div class="progress-bar-fill {{ mod.color }}" data-width="{{ pct }}%" style="width:{{ pct }}%;"></div>
+    </div>
+  </div>
+
+  <!-- Lessons list -->
+  <div class="lessons-list">
+    {% set current_week = namespace(val=0) %}
+    {% for item in lessons_data %}
+      {% set lesson = item.lesson %}
+      {% if lesson.week_number != current_week.val %}
+        {% set current_week.val = lesson.week_number %}
+        <div class="week-separator">
+          {% if mod.color == 'blue' %}
+            Aula {{ loop.index }}
+          {% else %}
+            Semana {{ lesson.week_number }}
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {% if item.unlocked %}
+        <a href="{{ url_for('lesson_view', lesson_id=lesson.id) }}" class="lesson-item {{ 'completed' if item.completed }}">
+      {% else %}
+        <div class="lesson-item locked">
+      {% endif %}
+
+        <div class="lesson-num {{ 'done' if item.completed else 'active' if item.unlocked else 'locked' }}">
+          {% if item.completed %}<i data-lucide="check" style="width:16px;height:16px;"></i>
+          {% elif item.unlocked %}{{ loop.index }}
+          {% else %}<i data-lucide="lock" style="width:14px;height:14px;"></i>
+          {% endif %}
+        </div>
+        <div class="lesson-info">
+          <h4>{{ lesson.title }}</h4>
+          <p>{{ lesson.subtitle }}</p>
+        </div>
+        <div class="lesson-badges">
+          {% if item.ex_count > 0 %}
+            <span class="lesson-badge">{{ item.ex_count }} exercício{{ 's' if item.ex_count > 1 }}</span>
+          {% endif %}
+          <span class="lesson-badge">{{ lesson.duration_minutes }}min</span>
+          {% if item.completed %}
+            <span style="color:var(--green);"><i data-lucide="check-circle" style="width:16px;height:16px;"></i></span>
+          {% elif item.unlocked %}
+            <span style="color:var(--primary-light);"><i data-lucide="arrow-right" style="width:16px;height:16px;"></i></span>
+          {% endif %}
+        </div>
+
+      {% if item.unlocked %}</a>{% else %}</div>{% endif %}
+    {% endfor %}
+  </div>
+
+  {% if pct == 100 %}
+    <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:var(--radius-lg); padding:2rem; text-align:center; margin-top:2rem;">
+      <div style="margin-bottom:0.75rem;"><i data-lucide="party-popper" style="width:48px;height:48px;color:var(--green);"></i></div>
+      <h2 style="color:var(--green); font-size:1.3rem; margin-bottom:0.5rem;">Módulo Concluído!</h2>
+      <p style="color:var(--text2); font-size:0.9rem;">Parabéns! Você completou o módulo <strong>{{ mod.name }}</strong>. Continue evoluindo!</p>
+    </div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

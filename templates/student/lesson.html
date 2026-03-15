@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} — MatheusDevCursos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner" style="display:flex; align-items:center; gap:1rem;">
+    <a href="{{ url_for('module_view', module_id=mod.id) }}" class="btn-sm secondary">← {{ mod.short_name or mod.name }}</a>
+    <div style="flex:1;">
+      <h1>{{ lesson.title }}</h1>
+      <p>{{ lesson.subtitle }}</p>
+    </div>
+    <div style="display:flex; gap:0.5rem; align-items:center;">
+      {% if prev_lesson %}
+        <a href="{{ url_for('lesson_view', lesson_id=prev_lesson.id) }}" class="btn-sm secondary" title="Aula anterior">
+          <i data-lucide="chevron-left" style="width:14px;height:14px;"></i>
+        </a>
+      {% endif %}
+      {% if next_lesson %}
+        <a href="{{ url_for('lesson_view', lesson_id=next_lesson.id) }}" class="btn-sm secondary" title="Próxima aula">
+          <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+        </a>
+      {% endif %}
+      <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+<div class="page-body-inner">
+  <div class="lesson-content-page">
+
+    <!-- Meta badges -->
+    <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1.25rem; flex-wrap:wrap;">
+      <span style="background:var(--primary-glow); color:var(--primary-light); font-size:0.72rem; font-weight:700; padding:0.18rem 0.55rem; border-radius:6px; text-transform:uppercase; letter-spacing:0.04em; border:1px solid rgba(99,102,241,0.25);">
+        {{ mod.short_name }}
+      </span>
+      <span style="font-size:0.72rem; color:var(--text3);">
+        <i data-lucide="clock" style="width:12px;height:12px;display:inline;vertical-align:middle;"></i> {{ lesson.duration_minutes }} min
+      </span>
+      {% if is_completed %}
+        <span style="font-size:0.72rem; color:var(--green); font-weight:700;">
+          <i data-lucide="check-circle" style="width:12px;height:12px;display:inline;vertical-align:middle;"></i> Concluída
+        </span>
+      {% endif %}
+    </div>
+
+    <!-- Lesson content -->
+    {{ lesson.content|safe }}
+
+    <!-- Exercises link bar -->
+    {% if lesson.exercises %}
+      <div class="lesson-exercises-bar">
+        <div>
+          <div class="ex-count">
+            <i data-lucide="code-2" style="width:16px;height:16px;display:inline;vertical-align:middle;"></i>
+            {{ lesson.exercises|length }} exercício{{ 's' if lesson.exercises|length > 1 }}
+            <span>— resolva para concluir esta aula</span>
+          </div>
+          <div style="font-size:0.78rem;color:var(--text3);margin-top:0.25rem;">
+            {% set passed_count = ex_passed.values()|select|list|length %}
+            {{ passed_count }}/{{ lesson.exercises|length }} resolvido{{ 's' if passed_count != 1 }}
+          </div>
+        </div>
+        <a href="{{ url_for('lesson_exercises', lesson_id=lesson.id) }}" class="btn-sm primary">
+          <i data-lucide="arrow-right" style="width:14px;height:14px;"></i> Resolver Exercícios
+        </a>
+      </div>
+    {% endif %}
+
+    <!-- Complete lesson -->
+    <div class="complete-lesson-bar">
+      {% if is_completed %}
+        <div class="lesson-completed-badge">
+          <i data-lucide="check-circle" style="width:18px;height:18px;display:inline;vertical-align:middle;"></i> Aula Concluída!
+        </div>
+      {% else %}
+        <button class="btn-complete" id="btn-complete-lesson"
+                onclick="completeLesson({{ lesson.id }})"
+                {{ 'disabled' if lesson.exercises and not all_done }}>
+          {% if lesson.exercises and not all_done %}
+            <i data-lucide="lock" style="width:16px;height:16px;"></i> Resolva os exercícios para concluir
+          {% else %}
+            <i data-lucide="check" style="width:16px;height:16px;"></i> Marcar como Concluída
+          {% endif %}
+        </button>
+      {% endif %}
+    </div>
+
+    <!-- Bottom navigation -->
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:1.5rem 0; border-top:1px solid var(--border); margin-top:1.5rem;">
+      {% if prev_lesson %}
+        <a href="{{ url_for('lesson_view', lesson_id=prev_lesson.id) }}" class="btn-sm secondary">← {{ prev_lesson.title }}</a>
+      {% else %}
+        <div></div>
+      {% endif %}
+      {% if next_lesson %}
+        <a href="{{ url_for('lesson_view', lesson_id=next_lesson.id) }}" class="btn-sm primary">{{ next_lesson.title }} →</a>
+      {% else %}
+        <a href="{{ url_for('module_view', module_id=mod.id) }}" class="btn-sm primary">Voltar ao Módulo →</a>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}

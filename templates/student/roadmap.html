@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}Roadmap — MatheusDevCursos{% endblock %}
+
+{% block extra_css %}
+<style>
+  .rm-timeline { position: relative; max-width: 700px; margin: 0 auto; padding: 1rem 0; }
+  .rm-timeline::before { content: ''; position: absolute; left: 28px; top: 0; bottom: 0; width: 3px; background: var(--border); border-radius: 2px; z-index: 0; }
+  .rm-timeline::after { content: ''; position: absolute; left: 28px; top: 0; width: 3px; border-radius: 2px; z-index: 1;
+    background: linear-gradient(to bottom, var(--green) var(--progress-line, 0%), transparent var(--progress-line, 0%));
+    height: 100%; transition: all 0.8s ease; }
+
+  .rm-node { position: relative; padding-left: 68px; margin-bottom: 0.5rem; z-index: 2; animation: fadeInUp 0.5s ease-out both; }
+  .rm-node:nth-child(1) { animation-delay: 0.05s; }
+  .rm-node:nth-child(2) { animation-delay: 0.12s; }
+  .rm-node:nth-child(3) { animation-delay: 0.19s; }
+  .rm-node:nth-child(4) { animation-delay: 0.26s; }
+  .rm-node:nth-child(5) { animation-delay: 0.33s; }
+  .rm-node:nth-child(6) { animation-delay: 0.40s; }
+  .rm-node:nth-child(7) { animation-delay: 0.47s; }
+  .rm-node:nth-child(8) { animation-delay: 0.54s; }
+  .rm-node:nth-child(9) { animation-delay: 0.61s; }
+  .rm-node:nth-child(10) { animation-delay: 0.68s; }
+
+  .rm-dot { position: absolute; left: 16px; top: 18px; width: 28px; height: 28px; border-radius: 50%; background: var(--bg2); border: 3px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; color: var(--text3); z-index: 3; transition: all 0.3s ease; }
+  .rm-node.completed .rm-dot { background: var(--green); border-color: var(--green); color: #fff; box-shadow: 0 0 12px rgba(16,185,129,0.4); }
+  .rm-node.current .rm-dot { background: var(--primary); border-color: var(--primary); color: #fff; animation: pulse-glow 2s ease-in-out infinite; }
+  .rm-node.locked .rm-dot { opacity: 0.4; }
+
+  .rm-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
+  .rm-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; transition: all 0.3s; }
+  .rm-node.completed .rm-card { border-color: rgba(16,185,129,0.3); }
+  .rm-node.completed .rm-card::before { background: linear-gradient(90deg, var(--green), #0d9488); }
+  .rm-node.current .rm-card { border-color: rgba(99,102,241,0.3); box-shadow: 0 4px 20px rgba(99,102,241,0.1); }
+  .rm-node.current .rm-card::before { background: var(--gradient); }
+  .rm-node.locked .rm-card { opacity: 0.5; border-style: dashed; }
+  .rm-card:hover { transform: translateX(4px); box-shadow: var(--shadow-lg); }
+  .rm-node.locked .rm-card:hover { transform: none; box-shadow: none; }
+
+  .rm-card-top { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+  .rm-card-left { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
+  .rm-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; transition: transform 0.3s; }
+  .rm-card:hover .rm-icon { transform: scale(1.1) rotate(-5deg); }
+  .rm-icon.green { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25); }
+  .rm-icon.blue { background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.2); }
+  .rm-icon.purple { background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.25); }
+  .rm-icon.orange { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); }
+  .rm-icon.red { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); }
+
+  .rm-title { font-size: 0.95rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rm-subtitle { font-size: 0.75rem; color: var(--text3); margin-top: 0.1rem; display: flex; align-items: center; gap: 0.5rem; }
+
+  .rm-status { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+  .rm-pct { font-size: 1.1rem; font-weight: 800; }
+  .rm-node.completed .rm-pct { color: var(--green); }
+  .rm-node.current .rm-pct { color: var(--primary-light); }
+  .rm-node.locked .rm-pct { color: var(--text3); font-size: 0.85rem; font-weight: 600; }
+
+  .rm-progress-wrap { margin-top: 0.85rem; }
+  .rm-progress-bar { height: 6px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+  .rm-progress-fill { height: 100%; border-radius: 3px; transition: width 1s ease 0.5s; }
+  .rm-progress-fill.green { background: linear-gradient(90deg, var(--green), #0d9488); }
+  .rm-progress-fill.purple { background: var(--gradient); }
+  .rm-progress-fill.blue { background: linear-gradient(90deg, var(--cyan), #2563eb); }
+  .rm-progress-fill.orange { background: linear-gradient(90deg, var(--orange), #ef4444); }
+  .rm-progress-fill.red { background: linear-gradient(90deg, var(--red), #dc2626); }
+  .rm-progress-meta { display: flex; justify-content: space-between; margin-top: 0.35rem; font-size: 0.72rem; color: var(--text3); }
+
+  .rm-expand { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease; opacity: 0; margin-top: 0; }
+  .rm-expand.open { max-height: 600px; opacity: 1; margin-top: 1rem; }
+
+  .rm-lessons { display: flex; flex-direction: column; gap: 0.35rem; padding-top: 0.85rem; border-top: 1px solid var(--border); }
+  .rm-lesson-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0.5rem; border-radius: 8px; transition: background 0.15s; }
+  .rm-lesson-row:hover { background: var(--bg2); }
+  .rm-lesson-num { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.62rem; font-weight: 700; flex-shrink: 0; background: var(--bg2); color: var(--text3); border: 1px solid var(--border); }
+  .rm-lesson-num.done { background: rgba(16,185,129,0.15); color: var(--green); border-color: rgba(16,185,129,0.3); }
+  .rm-lesson-name { font-size: 0.8rem; color: var(--text2); flex: 1; }
+  .rm-lesson-name.done { color: var(--text); }
+
+  .rm-btn-row { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+
+  .rm-section-label { font-size: 0.68rem; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin: 1.5rem 0 0.5rem; padding-left: 68px; display: flex; align-items: center; gap: 0.5rem; }
+  .rm-section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .rm-stats-bar { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.75rem; padding: 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); animation: fadeInUp 0.4s ease-out; }
+  .rm-stat { text-align: center; flex: 1; min-width: 80px; }
+  .rm-stat-val { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+  .rm-stat-lbl { font-size: 0.7rem; color: var(--text3); margin-top: 0.25rem; }
+
+  @media (max-width: 600px) {
+    .rm-node { padding-left: 52px; }
+    .rm-timeline::before, .rm-timeline::after { left: 18px; }
+    .rm-dot { left: 6px; width: 24px; height: 24px; font-size: 0.6rem; }
+    .rm-section-label { padding-left: 52px; }
+    .rm-icon { width: 36px; height: 36px; font-size: 1.1rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner" style="display:flex; align-items:center; justify-content:space-between;">
+    <div>
+      <h1><i data-lucide="map" style="width:22px;height:22px;display:inline;vertical-align:middle;"></i> Roadmap Python</h1>
+      <p>Sua trilha completa de aprendizado — clique em um módulo para ver detalhes</p>
+    </div>
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+  </div>
+</div>
+
+<div class="page-body">
+<div class="page-body-inner">
+  <div class="roadmap-container">
+
+    <!-- Overall stats -->
+    {% set owned_count = modules_info | selectattr('owned') | list | length %}
+    {% set completed_count = modules_info | selectattr('progress', 'equalto', 100) | list | length %}
+    {% set total_count = modules_info | length %}
+    <div class="rm-stats-bar">
+      <div class="rm-stat">
+        <div class="rm-stat-val" style="color:var(--text);">{{ total_count }}</div>
+        <div class="rm-stat-lbl">Total de Módulos</div>
+      </div>
+      <div class="rm-stat">
+        <div class="rm-stat-val" style="color:var(--primary-light);">{{ owned_count }}</div>
+        <div class="rm-stat-lbl">Desbloqueados</div>
+      </div>
+      <div class="rm-stat">
+        <div class="rm-stat-val" style="color:var(--green);">{{ completed_count }}</div>
+        <div class="rm-stat-lbl">Concluídos</div>
+      </div>
+      <div class="rm-stat">
+        <div class="rm-stat-val" style="color:var(--orange);">{{ total_count - owned_count }}</div>
+        <div class="rm-stat-lbl">Bloqueados</div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="roadmap-legend">
+      <div class="legend-item"><span class="legend-dot completed"></span> Concluído</div>
+      <div class="legend-item"><span class="legend-dot owned"></span> Em progresso</div>
+      <div class="legend-item"><span class="legend-dot locked"></span> Bloqueado</div>
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="rm-timeline" id="rmTimeline">
+      {% set sections = namespace(last='') %}
+      {% for item in modules_info %}
+        {% set mod = item.module %}
+        {% set cls = 'completed' if item.progress == 100 else 'current' if item.owned else 'locked' %}
+
+        {% set section_name = mod.level %}
+        {% if section_name != sections.last %}
+          {% set sections.last = section_name %}
+          <div class="rm-section-label">{{ section_name }}</div>
+        {% endif %}
+
+        <div class="rm-node {{ cls }}" data-module-id="{{ mod.id }}">
+          <div class="rm-dot">
+            {% if item.progress == 100 %}
+              <i data-lucide="check" style="width:14px;height:14px;"></i>
+            {% elif item.owned %}
+              <i data-lucide="play" style="width:12px;height:12px;"></i>
+            {% else %}
+              <i data-lucide="lock" style="width:11px;height:11px;"></i>
+            {% endif %}
+          </div>
+
+          <div class="rm-card" onclick="toggleRmExpand({{ mod.id }})">
+            <div class="rm-card-top">
+              <div class="rm-card-left">
+                <div class="rm-icon {{ mod.color }}">{{ mod.icon }}</div>
+                <div style="min-width:0;">
+                  <div class="rm-title">{{ mod.name }}</div>
+                  <div class="rm-subtitle">
+                    <span>{{ mod.duration }}</span>
+                    <span>·</span>
+                    <span>{{ mod.lessons|length }} aula{{ 's' if mod.lessons|length != 1 }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rm-status">
+                {% if item.progress == 100 %}
+                  <span class="rm-pct">✓</span>
+                {% elif item.owned %}
+                  <span class="rm-pct">{{ item.progress }}%</span>
+                {% else %}
+                  <span class="rm-pct">R$ {{ "%.0f"|format(mod.price) }}</span>
+                {% endif %}
+                <i data-lucide="chevron-down" style="width:16px;height:16px;color:var(--text3);transition:transform 0.3s;" class="rm-chevron"></i>
+              </div>
+            </div>
+
+            {% if item.owned and item.progress > 0 %}
+              <div class="rm-progress-wrap">
+                <div class="rm-progress-bar">
+                  <div class="rm-progress-fill {{ mod.color }}" style="width:{{ item.progress }}%;"></div>
+                </div>
+                <div class="rm-progress-meta">
+                  <span>{{ item.completed }}/{{ item.total }} aulas</span>
+                  <span>{{ item.progress }}% completo</span>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="rm-expand" id="rm-expand-{{ mod.id }}">
+            <div style="padding: 0 0.5rem;">
+              <p style="font-size:0.82rem;color:var(--text2);margin-bottom:0.75rem;">{{ mod.description }}</p>
+
+              {% if mod.lessons %}
+                <div class="rm-lessons">
+                  {% for lesson in mod.lessons %}
+                    <div class="rm-lesson-row">
+                      {% if item.owned %}
+                        {% set done = lesson.id in (current_user.progress | map(attribute='lesson_id') | list) %}
+                        <span class="rm-lesson-num {{ 'done' if done }}">
+                          {% if done %}✓{% else %}{{ loop.index }}{% endif %}
+                        </span>
+                        <span class="rm-lesson-name {{ 'done' if done }}">{{ lesson.title }}</span>
+                      {% else %}
+                        <span class="rm-lesson-num">{{ loop.index }}</span>
+                        <span class="rm-lesson-name">{{ lesson.title }}</span>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+
+              {% if item.owned %}
+                <div class="rm-btn-row">
+                  <a href="{{ url_for('module_view', module_id=mod.id) }}" class="btn-sm primary" style="flex:1;justify-content:center;">
+                    <i data-lucide="{{ 'play' if item.progress > 0 else 'arrow-right' }}" style="width:14px;height:14px;"></i>
+                    {% if item.progress > 0 %}Continuar{% else %}Começar{% endif %}
+                  </a>
+                </div>
+              {% else %}
+                <div style="margin-top:0.75rem;padding:0.75rem;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);border-radius:var(--radius);font-size:0.8rem;color:var(--orange);text-align:center;">
+                  <i data-lucide="lock" style="width:14px;height:14px;display:inline;vertical-align:middle;"></i>
+                  Entre em contato para desbloquear este módulo
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+
+      <!-- Final marker -->
+      <div class="rm-node" style="margin-bottom:0;">
+        <div class="rm-dot" style="background:var(--gradient);border-color:var(--primary);color:#fff;">
+          <i data-lucide="trophy" style="width:14px;height:14px;"></i>
+        </div>
+        <div style="padding:1rem 0;font-size:0.9rem;font-weight:700;color:var(--text);">
+          Formação Completa! 🎉
+          <div style="font-size:0.78rem;color:var(--text3);font-weight:400;margin-top:0.15rem;">Domine Python, Automação, Dados e IA</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleRmExpand(moduleId) {
+  const el = document.getElementById('rm-expand-' + moduleId);
+  if (!el) return;
+  const wasOpen = el.classList.contains('open');
+
+  document.querySelectorAll('.rm-expand.open').forEach(p => {
+    p.classList.remove('open');
+    const card = p.previousElementSibling;
+    if (card) { const c = card.querySelector('.rm-chevron'); if(c) c.style.transform = ''; }
+  });
+
+  if (!wasOpen) {
+    el.classList.add('open');
+    const card = el.previousElementSibling;
+    if (card) { const c = card.querySelector('.rm-chevron'); if(c) c.style.transform = 'rotate(180deg)'; }
+    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+  }
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// Animate the progress line
+(function() {
+  const timeline = document.getElementById('rmTimeline');
+  if (!timeline) return;
+  const nodes = timeline.querySelectorAll('.rm-node');
+  if (!nodes.length) return;
+  let lastCompletedIdx = -1;
+  nodes.forEach((n, i) => { if (n.classList.contains('completed') || n.classList.contains('current')) lastCompletedIdx = i; });
+  if (lastCompletedIdx >= 0) {
+    const pct = Math.min(100, ((lastCompletedIdx + 1) / (nodes.length)) * 100);
+    timeline.style.setProperty('--progress-line', pct + '%');
+  }
+})();
+
+if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}

@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+{% block title %}Projeto Prático — MatheusDevCursos{% endblock %}
+
+{% block extra_css %}
+<style>
+.proj-layout { display: grid; grid-template-columns: 1fr 360px; gap: 1.25rem; align-items: start; }
+
+/* reuse same calendar styles from schedule */
+.month-cal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.month-cal-nav { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--border); }
+.month-cal-title { font-size: 0.92rem; font-weight: 700; color: var(--text); }
+.month-cal-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.5rem; cursor: pointer; color: var(--text2); display: flex; align-items: center; }
+.month-cal-btn:hover { border-color: var(--primary); color: var(--primary); }
+.month-grid { display: grid; grid-template-columns: repeat(7, 1fr); padding: 0 0.5rem 0.5rem; gap: 3px; }
+.month-dow { text-align: center; font-size: 0.68rem; font-weight: 700; color: var(--text3); text-transform: uppercase; padding: 0.5rem 0 0.4rem; }
+.month-cell { text-align: center; padding: 0.35rem; font-size: 0.85rem; color: var(--text3); min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 8px; border: 1px solid transparent; background: var(--bg2); }
+.month-cell.other-month { opacity: 0.25; }
+.month-cell.past { opacity: 0.3; }
+.month-cell.today .cell-num { background: var(--surface2); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text); }
+.month-cell.available { cursor: pointer; border-color: var(--border); }
+.month-cell.available .cell-num { color: var(--text); font-weight: 600; }
+.month-cell.available:hover { border-color: var(--primary); background: rgba(99,102,241,0.08); }
+.month-cell.selected { border-color: var(--primary) !important; background: rgba(99,102,241,0.12) !important; }
+.month-cell.selected .cell-num { background: var(--primary); color: #fff; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+.cell-num { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+.cell-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--primary); }
+
+.ts-btn { padding: 0.45rem 0.9rem; border-radius: 99px; border: 1.5px solid var(--border2); background: var(--surface); font-size: 0.83rem; font-weight: 600; color: var(--text2); cursor: pointer; transition: all 0.15s; }
+.ts-btn:hover { border-color: var(--primary); color: var(--primary); }
+.ts-btn.selected { border-color: var(--primary); background: var(--primary); color: #fff; }
+.ts-btn.booked { opacity: 0.35; cursor: not-allowed; text-decoration: line-through; }
+
+.proj-form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+.proj-form-label { font-size: 0.72rem; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.35rem; }
+.proj-form-input { width: 100%; padding: 0.5rem 0.7rem; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); color: var(--text); font-size: 0.85rem; }
+.proj-form-textarea { width: 100%; padding: 0.55rem 0.7rem; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); color: var(--text); font-size: 0.85rem; resize: vertical; line-height: 1.6; }
+.confirm-tag { display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.25); border-radius: 99px; padding: 0.3rem 0.75rem; font-size: 0.78rem; font-weight: 600; color: var(--primary-light); margin: 0.2rem; }
+
+.info-step { display: flex; gap: 0.75rem; align-items: flex-start; }
+.info-step-icon { font-size: 1.1rem; margin-top: 0.1rem; flex-shrink: 0; }
+.info-step-title { font-weight: 700; font-size: 0.85rem; color: var(--text); margin-bottom: 0.2rem; }
+.info-step-text { font-size: 0.82rem; color: var(--text3); line-height: 1.5; }
+
+@media (max-width: 820px) { .proj-layout { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner" style="display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <h1><i data-lucide="hammer" style="width:22px;height:22px;display:inline;vertical-align:middle;"></i> Projeto Prático</h1>
+      <p>Agende sua sessão de 2 horas e descreva o projeto que vamos construir juntos.</p>
+    </div>
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+  </div>
+</div>
+
+<div class="page-body"><div class="page-body-inner">
+
+  <!-- Existing booking banner -->
+  {% if existing and existing.status in ['pending', 'confirmed'] %}
+  <div class="lesson-intro-box" style="margin-bottom:1.5rem;border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.06);">
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.65rem;">
+      <i data-lucide="check-circle" style="width:16px;height:16px;color:#22c55e;flex-shrink:0;"></i>
+      <strong style="font-size:0.9rem;">Sessão já agendada!</strong>
+      <span class="call-status {{ existing.status }}" style="margin-left:auto;font-size:0.72rem;">
+        {{ existing.status }}
+      </span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.65rem;">
+      <span class="confirm-tag"><i data-lucide="calendar" style="width:11px;height:11px;display:inline;vertical-align:middle;"></i> {{ existing.scheduled_date.strftime('%d/%m/%Y') }}</span>
+      <span class="confirm-tag"><i data-lucide="clock" style="width:11px;height:11px;display:inline;vertical-align:middle;"></i> {{ existing.scheduled_time }}h (2h)</span>
+    </div>
+    <p style="font-size:0.85rem;color:var(--text);margin-bottom:0.2rem;"><strong>{{ existing.project_title }}</strong></p>
+    <p style="font-size:0.82rem;color:var(--text3);line-height:1.5;">{{ existing.project_description }}</p>
+    <button onclick="document.getElementById('sched-section').style.display='block';this.closest('.lesson-intro-box').style.display='none';"
+      class="btn-sm secondary" style="margin-top:0.85rem;">
+      <i data-lucide="edit" style="width:12px;height:12px;display:inline;vertical-align:middle;"></i> Reagendar / Editar
+    </button>
+  </div>
+  <div id="sched-section" style="display:none;">
+  {% else %}
+  <div id="sched-section">
+  {% endif %}
+
+  <div class="proj-layout">
+
+    <!-- ── LEFT: calendar + time slots ── -->
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+
+      <!-- Month calendar -->
+      <div class="month-cal">
+        <div class="month-cal-nav">
+          <button class="month-cal-btn" onclick="changeMonth(-1)">
+            <i data-lucide="chevron-left" style="width:15px;height:15px;"></i>
+          </button>
+          <span class="month-cal-title" id="calTitle"></span>
+          <button class="month-cal-btn" onclick="changeMonth(1)">
+            <i data-lucide="chevron-right" style="width:15px;height:15px;"></i>
+          </button>
+        </div>
+        <div class="month-grid" id="calGrid"></div>
+        <div style="padding:0.6rem 1rem;border-top:1px solid var(--border);display:flex;gap:1.25rem;font-size:0.75rem;color:var(--text3);">
+          <span><span class="cell-dot" style="display:inline-block;margin-right:4px;vertical-align:middle;"></span>Disponível</span>
+          <span><i data-lucide="clock" style="width:11px;height:11px;display:inline;vertical-align:middle;margin-right:3px;"></i>Sessões de <strong>2 horas</strong></span>
+          <span><i data-lucide="message-circle" style="width:11px;height:11px;display:inline;vertical-align:middle;margin-right:3px;"></i>Discord / Meet</span>
+        </div>
+      </div>
+
+      <!-- Time slots -->
+      <div id="timeSlotsCard" class="month-cal" style="display:none;">
+        <div class="month-cal-nav" style="border-bottom:none;padding-bottom:0;">
+          <span class="month-cal-title" id="timeSlotTitle">Horários disponíveis</span>
+          <span style="font-size:0.75rem;color:var(--text3);">blocos de 2h</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.5rem;padding:0.75rem 1rem 1rem;" id="timeGrid"></div>
+      </div>
+
+    </div>
+
+    <!-- ── RIGHT: project form + info ── -->
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+
+      <!-- Project form (hidden until time selected) -->
+      <div class="proj-form-card" id="projForm" style="display:none;">
+        <div style="font-size:0.82rem;font-weight:700;color:var(--text);">
+          <i data-lucide="rocket" style="width:14px;height:14px;display:inline;vertical-align:middle;color:var(--primary);"></i>
+          Descreva seu Projeto
+        </div>
+        <div id="selSummary" style="display:flex;flex-wrap:wrap;gap:0.35rem;"></div>
+        <div>
+          <label class="proj-form-label">Título do Projeto *</label>
+          <input type="text" id="projTitle" class="proj-form-input" placeholder="Ex: Automação de relatórios de vendas">
+        </div>
+        <div>
+          <label class="proj-form-label">Descrição *</label>
+          <textarea id="projDescription" class="proj-form-textarea" rows="5"
+            placeholder="O que quer construir? Qual problema resolve? Quais dados/sistemas envolvem? Resultado esperado."></textarea>
+          <p style="font-size:0.73rem;color:var(--text3);margin-top:0.3rem;">Quanto mais detalhe, melhor preparado estarei.</p>
+        </div>
+        <button class="btn-primary" id="confirmBtn" onclick="confirmBooking()" style="width:100%;">
+          <i data-lucide="send" style="width:15px;height:15px;display:inline;vertical-align:middle;"></i> Confirmar Sessão
+        </button>
+        <div id="bookingFeedback" class="booking-feedback"></div>
+      </div>
+
+      <!-- Placeholder -->
+      <div id="projPlaceholder" class="proj-form-card" style="align-items:center;justify-content:center;min-height:200px;text-align:center;color:var(--text3);">
+        <i data-lucide="calendar-check" style="width:32px;height:32px;opacity:0.35;margin-bottom:0.65rem;"></i>
+        <p style="font-size:0.85rem;">Selecione uma data e horário no calendário para descrever seu projeto.</p>
+      </div>
+
+      <!-- What to expect -->
+      <div class="proj-form-card">
+        <div style="font-size:0.8rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;">O que acontece na sessão</div>
+        <div class="info-step">
+          <span class="info-step-icon">🎯</span>
+          <div><div class="info-step-title">Revisão do escopo (20 min)</div>
+          <div class="info-step-text">Alinhamos o que será construído e o resultado esperado.</div></div>
+        </div>
+        <div class="info-step">
+          <span class="info-step-icon">💻</span>
+          <div><div class="info-step-title">Construção ao vivo (1h20)</div>
+          <div class="info-step-text">Codamos juntos — explico cada decisão enquanto você replica no seu ambiente.</div></div>
+        </div>
+        <div class="info-step">
+          <span class="info-step-icon">📦</span>
+          <div><div class="info-step-title">Entregável</div>
+          <div class="info-step-text">Script funcional, comentado e pronto para adaptar.</div></div>
+        </div>
+        <div class="info-step">
+          <span class="info-step-icon">🔄</span>
+          <div><div class="info-step-title">Pós-sessão</div>
+          <div class="info-step-text">Código no Discord + até 3 dúvidas por mensagem na semana seguinte.</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  </div><!-- end sched-section -->
+
+</div></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const AVAIL = {{ avail_map|safe }};
+const BOOKED = {{ booked_slots|safe }};
+
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+let selDate = null, selTime = null, selDayNum = null;
+let calYear, calMonth;
+const now = new Date();
+calYear = now.getFullYear(); calMonth = now.getMonth();
+
+function pad(n) { return String(n).padStart(2,'0'); }
+function fmtDate(y,m,d) { return `${y}-${pad(m+1)}-${pad(d)}`; }
+
+function gen2hSlots(dow, dateStr) {
+  const slots = AVAIL[dow] || [];
+  const result = [];
+  slots.forEach(slot => {
+    let h = parseInt(slot.start), eh = parseInt(slot.end);
+    while (h + 2 <= eh) {
+      result.push({ time: `${pad(h)}:00`, booked: BOOKED.some(b => b.date === dateStr && b.time === `${pad(h)}:00`) });
+      h++;
+    }
+  });
+  return result;
+}
+
+function changeMonth(dir) {
+  calMonth += dir;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  selDate = null; selTime = null;
+  document.getElementById('timeSlotsCard').style.display = 'none';
+  renderCalendar();
+}
+
+function renderCalendar() {
+  document.getElementById('calTitle').textContent = `${MONTHS_PT[calMonth]} ${calYear}`;
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  // DOW headers inside the same grid
+  ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'month-dow';
+    h.textContent = d;
+    grid.appendChild(h);
+  });
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const firstDay = new Date(calYear, calMonth, 1);
+  let startDow = firstDay.getDay() - 1;
+  if (startDow < 0) startDow = 6;
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const prevDays = new Date(calYear, calMonth, 0).getDate();
+
+  for (let i = startDow - 1; i >= 0; i--) {
+    const c = document.createElement('div');
+    c.className = 'month-cell other-month';
+    c.innerHTML = `<span class="cell-num">${prevDays - i}</span>`;
+    grid.appendChild(c);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(calYear, calMonth, d);
+    const dow = date.getDay();
+    const dateStr = fmtDate(calYear, calMonth, d);
+    const isPast = date < today;
+    const isToday = date.getTime() === today.getTime();
+    const isSelected = selDate === dateStr;
+    const slots2h = gen2hSlots(dow, dateStr);
+    const hasAvail = slots2h.length > 0;
+    const anyFree = slots2h.some(s => !s.booked);
+
+    const cell = document.createElement('div');
+    cell.className = 'month-cell';
+    if (isPast) cell.classList.add('past');
+    if (isToday) cell.classList.add('today');
+    if (isSelected) cell.classList.add('selected');
+    if (hasAvail && !isPast) cell.classList.add('available');
+
+    cell.innerHTML = `<span class="cell-num">${d}</span>${hasAvail && !isPast && anyFree ? '<span class="cell-dot"></span>' : ''}`;
+
+    if (hasAvail && !isPast && anyFree) {
+      cell.addEventListener('click', () => selectDate(dateStr, dow, d, slots2h));
+    }
+    grid.appendChild(cell);
+  }
+
+  const total = startDow + daysInMonth;
+  const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= rem; i++) {
+    const c = document.createElement('div');
+    c.className = 'month-cell other-month';
+    c.innerHTML = `<span class="cell-num">${i}</span>`;
+    grid.appendChild(c);
+  }
+  lucide.createIcons();
+}
+
+function selectDate(dateStr, dow, dayNum, slots2h) {
+  selDate = dateStr; selTime = null; selDayNum = dayNum;
+  document.querySelectorAll('.month-cell').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+
+  const tg = document.getElementById('timeGrid');
+  tg.innerHTML = '';
+  slots2h.forEach(s => {
+    const [h] = s.time.split(':').map(Number);
+    const btn = document.createElement('button');
+    btn.className = 'ts-btn' + (s.booked ? ' booked' : '');
+    btn.textContent = `${s.time} – ${pad(h+2)}:00`;
+    btn.disabled = s.booked;
+    if (!s.booked) btn.addEventListener('click', () => pickTime(s.time, btn, dayNum));
+    tg.appendChild(btn);
+  });
+
+  document.getElementById('timeSlotTitle').textContent = `${dayNum} de ${MONTHS_SHORT[calMonth]} — Horários`;
+  document.getElementById('timeSlotsCard').style.display = 'block';
+  document.getElementById('projForm').style.display = 'none';
+  document.getElementById('projPlaceholder').style.display = 'flex';
+  document.getElementById('timeSlotsCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  lucide.createIcons();
+}
+
+function pickTime(ts, btn, dayNum) {
+  selTime = ts;
+  document.querySelectorAll('.ts-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const [h] = ts.split(':').map(Number);
+
+  document.getElementById('selSummary').innerHTML = `
+    <span class="confirm-tag"><i data-lucide="calendar" style="width:11px;height:11px;display:inline;vertical-align:middle;"></i> ${dayNum} ${MONTHS_SHORT[calMonth]} ${calYear}</span>
+    <span class="confirm-tag"><i data-lucide="clock" style="width:11px;height:11px;display:inline;vertical-align:middle;"></i> ${ts} – ${pad(h+2)}:00</span>
+  `;
+  document.getElementById('projPlaceholder').style.display = 'none';
+  document.getElementById('projForm').style.display = 'flex';
+  document.getElementById('projForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  lucide.createIcons();
+}
+
+async function confirmBooking() {
+  const title = document.getElementById('projTitle').value.trim();
+  const desc = document.getElementById('projDescription').value.trim();
+  const fb = document.getElementById('bookingFeedback');
+  const btn = document.getElementById('confirmBtn');
+
+  if (!selDate || !selTime) { fb.className = 'booking-feedback error'; fb.textContent = 'Selecione um horário.'; return; }
+  if (!title) { fb.className = 'booking-feedback error'; fb.textContent = 'Informe o título do projeto.'; return; }
+  if (desc.length < 30) { fb.className = 'booking-feedback error'; fb.textContent = 'Descreva o projeto com pelo menos 30 caracteres.'; return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader" style="width:15px;height:15px;display:inline;vertical-align:middle;"></i> Agendando...';
+  lucide.createIcons();
+
+  try {
+    const res = await fetch('/book-projeto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: selDate, time: selTime, title, description: desc })
+    });
+    const data = await res.json();
+    if (data.success) {
+      fb.className = 'booking-feedback success';
+      fb.innerHTML = '<i data-lucide="check-circle" style="width:14px;height:14px;display:inline;vertical-align:middle;"></i> ' + data.message;
+      setTimeout(() => location.reload(), 1600);
+    } else {
+      fb.className = 'booking-feedback error';
+      fb.textContent = data.message;
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="send" style="width:15px;height:15px;display:inline;vertical-align:middle;"></i> Confirmar Sessão';
+    }
+  } catch {
+    fb.className = 'booking-feedback error';
+    fb.textContent = 'Erro de conexão. Tente novamente.';
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="send" style="width:15px;height:15px;display:inline;vertical-align:middle;"></i> Confirmar Sessão';
+  }
+  lucide.createIcons();
+}
+
+renderCalendar();
+lucide.createIcons();
+</script>
+{% endblock %}

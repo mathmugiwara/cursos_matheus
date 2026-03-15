@@ -1,0 +1,129 @@
+[Heading 1] 1. Por que Python? O que é e onde é usado
+[Normal] Python é, hoje, a linguagem de programação mais popular do mundo para automação, dados e inteligência artificial. Criada por Guido van Rossum em 1991, ela foi projetada para ser legível como inglês — o que a torna ideal para quem está começando e para quem precisa de produtividade no dia a dia.
+[Heading 2] 1.1 Vantagens do Python
+[List Paragraph] Legibilidade: o código se parece com inglês, facilitando leitura e manutenção
+[List Paragraph] Ecossistema enorme: bibliotecas prontas para automação, dados, IA, web e muito mais
+[List Paragraph] Alta demanda: linguagem mais pedida em vagas de automação e análise de dados no Brasil
+[List Paragraph] Multiplataforma: roda em Windows, Mac e Linux sem alteração no código
+[List Paragraph] Comunidade ativa: fácil encontrar soluções, tutoriais e suporte online
+[Heading 2] 1.2 O que você pode fazer com Python
+[Heading 2] 1.3 Instalação do Python e VS Code
+[Normal] Para começar a programar em Python você precisa de dois softwares: o interpretador Python (que executa o código) e um editor de código.
+[List Paragraph] Acesse python.org/downloads e baixe a versão mais recente (3.12+)
+[List Paragraph] Na instalação, marque a opção 'Add Python to PATH' antes de clicar em Install
+[List Paragraph] Abra o terminal (cmd no Windows) e rode: python --version
+[List Paragraph] Baixe o VS Code em code.visualstudio.com
+[List Paragraph] Instale a extensão 'Python' da Microsoft dentro do VS Code
+[Heading 2] 1.4 Primeiro programa: Hello, World!
+[Normal] Por tradição, o primeiro programa em qualquer linguagem exibe a mensagem 'Hello, World!'. Em Python é simples:
+[Normal] A função print() exibe texto na tela. Qualquer coisa entre aspas (simples ou duplas) é texto (string).
+[Heading 1] 2. Variáveis e Tipos de Dados
+[Normal] Variáveis são 'caixinhas' que guardam informações na memória do computador. Ao contrário de outras linguagens, em Python você não precisa declarar o tipo — ele é detectado automaticamente.
+[Heading 2] 2.1 Tipo str — Texto
+[Normal] Strings armazenam qualquer sequência de caracteres. Use para nomes, mensagens, caminhos de arquivo, CPFs, e tudo que não é número para cálculo.
+[Heading 2] 2.2 Tipo int — Número Inteiro
+[Normal] Inteiros são números sem parte decimal. Use para contagens, IDs, índices, quantidade de itens, anos.
+[Heading 2] 2.3 Tipo float — Número Decimal
+[Normal] Floats armazenam números com casas decimais. Use para valores monetários, porcentagens, medições. Atenção: ponto como separador decimal (não vírgula).
+[Heading 2] 2.4 Tipo bool — Verdadeiro/Falso
+[Normal] Booleanos só aceitam True ou False (com maiúscula). São a base de toda lógica condicional.
+[Heading 2] 2.5 Verificando tipos com type()
+[Heading 2] 2.6 f-strings — Formatação moderna
+[Normal] f-strings são o jeito mais moderno e legível de montar textos com variáveis em Python. Coloque um f antes das aspas e use {} para inserir qualquer variável ou expressão.
+[Heading 1] 3. Operadores
+[Heading 2] 3.1 Operadores Aritméticos
+[Heading 2] 3.2 Operadores de Comparação
+[Normal] Sempre retornam True ou False. São a base das condicionais.
+[Heading 2] 3.3 Operadores Lógicos
+[Heading 1] 4. Estruturas Condicionais: if, elif, else
+[Normal] Condicionais permitem que o programa tome decisões com base em condições. O Python executa apenas o bloco correspondente à primeira condição verdadeira.
+[Heading 2] 4.1 if simples
+[Heading 2] 4.2 if / else
+[Heading 2] 4.3 if / elif / else (múltiplas condições)
+[Heading 2] 4.4 Condicional em uma linha (ternário)
+[Normal] Para condições simples que retornam um valor, Python tem uma forma compacta:
+[Heading 2] 4.5 Exemplo Completo — Calculadora de Salário Líquido
+[Normal] Vamos combinar todos os conceitos em um exemplo prático:
+[Heading 1] 5. Listas
+[Normal] Listas são coleções ordenadas e mutáveis de itens. Pense nelas como uma coluna de planilha: cada linha é um item. Você pode guardar qualquer tipo de dado, inclusive misturar tipos.
+[Heading 2] 5.1 Indexação e Slicing
+[Normal] Cada item tem um índice que começa em 0. Índices negativos contam do final.
+[Heading 2] 5.2 Métodos de Lista
+[Heading 1] 6. Tuplas
+[Normal] Tuplas são como listas, mas imutáveis — depois de criadas, não podem ser alteradas. Use para dados que não devem mudar: coordenadas, configurações, constantes.
+[Heading 1] 7. Dicionários
+[Normal] Dicionários armazenam pares chave-valor. Pense neles como uma ficha cadastral — cada campo (chave) tem um valor correspondente. São extremamente úteis para representar objetos do mundo real.
+[Heading 2] 7.1 Iterando sobre dicionários
+[Heading 2] 7.2 Lista de Dicionários — padrão para dados
+[Normal] O padrão mais comum em automação e dados é uma lista de dicionários, onde cada dicionário é um registro:
+[Heading 1] 8. Estruturas de Repetição
+[Heading 2] 8.1 Loop for
+[Normal] Use o for quando você sabe quantas vezes vai repetir ou quando está percorrendo uma coleção.
+[Heading 2] 8.2 Loop while
+[Normal] Use o while quando não sabe quantas vezes vai repetir — repete enquanto uma condição for verdadeira.
+[Heading 2] 8.3 break e continue
+[Heading 1] 9. Funções
+[Normal] Funções são blocos de código reutilizáveis com nome. Em vez de copiar e colar o mesmo código várias vezes, você define uma função uma vez e chama quando precisar.
+[Heading 2] 9.1 Definindo e chamando funções
+[Heading 2] 9.2 Funções com retorno
+[Heading 2] 9.3 Funções práticas para automação
+[Heading 1] 10. Import de Bibliotecas
+[Normal] Bibliotecas são coleções de funções prontas criadas por outros desenvolvedores. Você não precisa criar tudo do zero — importe e use.
+[Heading 1] 11. O que é Automação de Processos (RPA)
+[Normal] RPA (Robotic Process Automation) é a técnica de usar software para automatizar tarefas repetitivas que humanos fazem manualmente em computadores — clicar em botões, preencher formulários, copiar dados entre sistemas.
+[Heading 2] 11.1 Onde RPA se aplica
+[List Paragraph] Extrair dados de sistemas legados sem API disponível
+[List Paragraph] Preencher formulários web ou desktop automaticamente
+[List Paragraph] Copiar informações de um sistema para outro (ERP → planilha, por ex.)
+[List Paragraph] Gerar relatórios periódicos sem intervenção manual
+[List Paragraph] Enviar e-mails em massa com dados personalizados
+[List Paragraph] Monitorar sites e alertar sobre mudanças de preço ou estoque
+[Heading 2] 11.2 Ferramentas que vamos usar
+[Heading 1] 12. PyAutoGUI — Controlando Mouse e Teclado
+[Heading 2] 12.1 Controle do Mouse
+[Heading 2] 12.2 Controle do Teclado
+[Heading 2] 12.3 Screenshots e Detecção de Imagem
+[Normal] PyAutoGUI pode tirar screenshots e localizar imagens na tela — ideal para clicar em botões baseados na aparência, não na posição fixa.
+[Heading 1] 13. pywin32 — Controlando Janelas Windows
+[Normal] O pywin32 permite abrir, fechar, minimizar, maximizar e interagir com janelas de qualquer aplicação Windows, incluindo sistemas legados que não têm API.
+[Heading 1] 14. Tratamento de Erros com try/except
+[Normal] Automações rodam sem supervisão humana. Se o script encontra um erro inesperado e não está preparado, ele para e a tarefa não é concluída. O try/except garante que o script continue mesmo com problemas.
+[Heading 2] 14.1 try/except em automações
+[Heading 1] 15. Salvar Resultados em CSV e TXT
+[Heading 1] 16. O que é o Pandas
+[Normal] Pandas é a biblioteca mais importante para análise de dados em Python. O nome vem de 'panel data'. Pense nela como um Excel dentro do Python — mas com superpoderes: você pode processar milhões de linhas em segundos, encadear operações, e automatizar tudo.
+[Heading 2] 16.1 Conceitos fundamentais
+[Heading 1] 17. Lendo Arquivos com Pandas
+[Heading 2] 17.1 Lendo CSV
+[Heading 2] 17.2 Lendo Excel
+[Heading 1] 18. Explorando e Filtrando Dados
+[Heading 2] 18.1 Acessar colunas e linhas
+[Heading 2] 18.2 Filtros
+[Heading 1] 19. Criando e Transformando Colunas
+[Heading 1] 20. Tratamento de Dados
+[Heading 2] 20.1 Valores nulos
+[Heading 2] 20.2 Duplicatas
+[Heading 2] 20.3 Agrupamentos
+[Heading 1] 21. Salvando Resultados
+[Heading 1] 22. Agendador de Tarefas do Windows
+[Normal] Com o Agendador de Tarefas do Windows você pode executar seu script Python automaticamente em horários definidos — sem precisar abrir o computador e rodar manualmente.
+[Heading 2] 22.1 Como agendar um script Python
+[List Paragraph] Abra o 'Agendador de Tarefas' (pesquise na barra de pesquisa do Windows)
+[List Paragraph] Clique em 'Criar Tarefa Básica...' no painel direito
+[List Paragraph] Nome: Automação Relatório Diário — Avançar
+[List Paragraph] Gatilho: Diariamente — defina o horário (ex: 07:00) — Avançar
+[List Paragraph] Ação: Iniciar um programa — Avançar
+[List Paragraph] Programa/script: insira o caminho do python.exe
+[List Paragraph] Adicionar argumentos: insira o caminho completo do seu .py
+[List Paragraph] Iniciar em: insira a pasta onde está o script — Concluir
+[Heading 2] 22.2 Script com log de execução
+[Heading 1] 23. Projeto Final do Módulo
+[Normal] Você vai construir uma automação completa que engloba tudo que aprendemos nas 4 semanas. Este é o projeto que você apresentará e levará para o seu portfólio.
+[Heading 2] 23.1 Etapas do projeto
+[List Paragraph] PyAutoGUI/pywin32: abrir o sistema, navegar até o relatório e exportar os dados
+[List Paragraph] Pandas: ler o arquivo exportado, aplicar filtros e criar colunas calculadas
+[List Paragraph] Limpeza: tratar nulos, remover duplicatas, padronizar textos
+[List Paragraph] Saída: gerar Excel formatado com nome baseado na data atual
+[List Paragraph] Log: registrar data, hora e resultados de cada execução em arquivo .log
+[List Paragraph] Agendamento: script rodando automaticamente toda manhã às 7h
+[Heading 2] 23.2 Estrutura de código do projeto

@@ -1,0 +1,540 @@
+{% extends "base.html" %}
+{% block title %}Agendar Call — MatheusDevCursos{% endblock %}
+
+{% block extra_css %}
+<style>
+.sched-layout { display: grid; grid-template-columns: 260px 1fr; gap: 1.25rem; align-items: start; }
+
+/* ── Left panel ── */
+.sched-left { display: flex; flex-direction: column; gap: 1rem; }
+.step-label { font-size: 0.7rem; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
+
+.module-card {
+  display: flex; align-items: center; gap: 0.65rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.module-card:hover { border-color: var(--primary); background: var(--surface2); }
+.module-card.active { border-color: var(--primary); background: rgba(99,102,241,0.1); }
+.module-card .mod-icon { font-size: 1.3rem; }
+.module-card .mod-name { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.module-card .mod-sub { font-size: 0.72rem; color: var(--text3); margin-top: 0.1rem; }
+
+.week-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.week-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); cursor: pointer; font-size: 0.83rem;
+  color: var(--text2); transition: border-color 0.15s, background 0.15s;
+}
+.week-item:hover { border-color: var(--primary); color: var(--text); }
+.week-item.active { border-color: var(--primary); background: rgba(99,102,241,0.1); color: var(--text); font-weight: 600; }
+.week-item.used { opacity: 0.45; cursor: not-allowed; }
+.week-item .week-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border2); flex-shrink: 0; }
+.week-item.active .week-dot { background: var(--primary); }
+.week-item.used .week-dot { background: var(--green, #22c55e); }
+
+/* ── Right panel ── */
+.sched-right { display: flex; flex-direction: column; gap: 1rem; }
+
+/* ── Month calendar ── */
+.month-cal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.month-cal-nav { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--border); }
+.month-cal-title { font-size: 0.92rem; font-weight: 700; color: var(--text); }
+.month-cal-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.5rem; cursor: pointer; color: var(--text2); display: flex; align-items: center; }
+.month-cal-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+.month-grid { display: grid; grid-template-columns: repeat(7, 1fr); padding: 0 0.5rem 0.5rem; gap: 3px; }
+.month-dow { text-align: center; font-size: 0.68rem; font-weight: 700; color: var(--text3); text-transform: uppercase; padding: 0.5rem 0 0.4rem; }
+.month-cell { text-align: center; padding: 0.35rem; font-size: 0.85rem; color: var(--text3); min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; position: relative; border-radius: 8px; border: 1px solid transparent; background: var(--bg2); }
+.month-cell.other-month { opacity: 0.25; }
+.month-cell.past { opacity: 0.3; }
+.month-cell.today .cell-num { background: var(--surface2); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text); }
+.month-cell.available { cursor: pointer; border-color: var(--border); }
+.month-cell.available .cell-num { color: var(--text); font-weight: 600; }
+.month-cell.available:hover { border-color: var(--primary); background: rgba(99,102,241,0.08); }
+.month-cell.selected { border-color: var(--primary) !important; background: rgba(99,102,241,0.12) !important; }
+.month-cell.selected .cell-num { background: var(--primary); color: #fff; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+.cell-num { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+.cell-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--primary); }
+.month-cell.available.booked-all .cell-dot { background: var(--text3); }
+
+/* ── Time slots ── */
+.time-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 1rem; }
+.ts-btn {
+  padding: 0.45rem 0.9rem; border-radius: 99px;
+  border: 1.5px solid var(--border2); background: var(--surface);
+  font-size: 0.83rem; font-weight: 600; color: var(--text2); cursor: pointer;
+  transition: all 0.15s;
+}
+.ts-btn:hover { border-color: var(--primary); color: var(--primary); }
+.ts-btn.selected { border-color: var(--primary); background: var(--primary); color: #fff; }
+.ts-btn.booked { opacity: 0.35; cursor: not-allowed; text-decoration: line-through; }
+
+/* ── Confirm panel ── */
+.confirm-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; }
+.confirm-summary { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1rem; }
+.confirm-tag { display: flex; align-items: center; gap: 0.35rem; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.25); border-radius: 99px; padding: 0.3rem 0.75rem; font-size: 0.78rem; font-weight: 600; color: var(--primary-light); }
+.confirm-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 1rem; }
+.confirm-input-group label { font-size: 0.72rem; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.3rem; }
+.confirm-input-group input { width: 100%; padding: 0.5rem 0.65rem; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); color: var(--text); font-size: 0.85rem; }
+
+/* ── Quota bar ── */
+.quota-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.9rem 1.1rem; display: flex; align-items: center; gap: 1rem; }
+.quota-track { flex: 1; background: var(--bg2); border-radius: 99px; height: 6px; overflow: hidden; }
+.quota-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width 0.4s; }
+.quota-label { font-size: 0.8rem; color: var(--text3); white-space: nowrap; }
+.quota-label strong { color: var(--text); }
+
+/* ── Call history ── */
+.calls-hist { display: flex; flex-direction: column; gap: 0.5rem; }
+.hist-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.85rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); }
+.hist-item .hist-mod { font-size: 1rem; }
+.hist-item .hist-info { flex: 1; }
+.hist-item .hist-title { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+.hist-item .hist-sub { font-size: 0.75rem; color: var(--text3); margin-top: 0.1rem; }
+
+@media (max-width: 768px) {
+  .sched-layout { grid-template-columns: 1fr; }
+  .confirm-inputs { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner" style="display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <h1><i data-lucide="calendar-clock" style="width:22px;height:22px;display:inline;vertical-align:middle;"></i> Agendar Call</h1>
+      <p>Selecione o módulo, a semana e um horário disponível.</p>
+    </div>
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+  </div>
+</div>
+
+<div class="page-body"><div class="page-body-inner">
+
+  <!-- Quota bar -->
+  <div class="quota-bar" style="margin-bottom:1.25rem;">
+    <i data-lucide="phone-call" style="width:16px;height:16px;color:var(--primary);flex-shrink:0;"></i>
+    <div class="quota-track">
+      {% set pct = (used_calls / total_calls * 100)|round|int if total_calls > 0 else 0 %}
+      <div class="quota-fill" style="width:{{ pct }}%;"></div>
+    </div>
+    <span class="quota-label"><strong>{{ used_calls }}</strong> de {{ total_calls }} calls usadas</span>
+    {% if not can_schedule %}
+    <span style="font-size:0.75rem;color:var(--orange);font-weight:600;">Todas agendadas</span>
+    {% endif %}
+  </div>
+
+  <div class="sched-layout">
+
+    <!-- ── LEFT: module + week selection ── -->
+    <div class="sched-left">
+
+      <!-- Módulos -->
+      <div>
+        <div class="step-label">① Módulo</div>
+        <div style="display:flex;flex-direction:column;gap:0.4rem;" id="moduleList">
+          {% set all_mod_ids = [] %}
+          {% for w in unbooked_weeks_raw %}{% if w.module_id not in all_mod_ids %}{% if all_mod_ids.append(w.module_id) %}{% endif %}{% endif %}{% endfor %}
+
+          {% for w in unbooked_weeks_raw %}
+            {% if loop.changed(w.module_id) %}
+            <div class="module-card" data-mid="{{ w.module_id }}" onclick="selectModule({{ w.module_id }})">
+              <span class="mod-icon">{{ w.module_icon }}</span>
+              <div>
+                <div class="mod-name">{{ w.module_name }}</div>
+                <div class="mod-sub" id="mod-sub-{{ w.module_id }}">
+                  {% set week_count = unbooked_weeks_raw|selectattr('module_id','eq', w.module_id)|list|length %}
+                  {{ week_count }} semana{{ 's' if week_count != 1 }} disponível{{ 'eis' if week_count != 1 }}
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          {% else %}
+            <div style="font-size:0.82rem;color:var(--text3);padding:0.75rem 0;">
+              Nenhum módulo com calls disponíveis.
+            </div>
+          {% endfor %}
+
+          {% for w in booked_weeks_data %}
+            {% if loop.changed(w.module_id) %}
+            <div class="module-card" style="opacity:0.45;cursor:default;">
+              <span class="mod-icon">{{ w.module_icon }}</span>
+              <div>
+                <div class="mod-name">{{ w.module_name }}</div>
+                <div class="mod-sub">Todas as calls usadas</div>
+              </div>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Semanas -->
+      <div id="weekSection" style="display:none;">
+        <div class="step-label">② Semana</div>
+        <div class="week-list" id="weekList"></div>
+      </div>
+
+      <!-- Histórico -->
+      {% if my_calls %}
+      <div>
+        <div class="step-label" style="margin-top:0.5rem;">Calls agendadas</div>
+        <div class="calls-hist">
+          {% for call in my_calls %}
+          <div class="hist-item">
+            <span class="hist-mod">{{ call.module_rel.icon if call.module_rel else '📅' }}</span>
+            <div class="hist-info">
+              <div class="hist-title">
+                {% if call.module_rel %}{{ call.module_rel.short_name or call.module_rel.name }}{% if call.week_number %} · S{{ call.week_number }}{% endif %}{% else %}Call{% endif %}
+              </div>
+              <div class="hist-sub">{{ call.scheduled_date.strftime('%d/%m/%Y') }} · {{ call.scheduled_time }}h</div>
+            </div>
+            <span class="call-status {{ call.status }}" style="font-size:0.7rem;">
+              {% if call.status == 'pending' %}Pendente
+              {% elif call.status == 'confirmed' %}Confirmada
+              {% elif call.status == 'completed' %}Realizada
+              {% else %}Cancelada{% endif %}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ── RIGHT: calendar + time + confirm ── -->
+    <div class="sched-right">
+
+      <!-- Placeholder when nothing selected -->
+      <div id="calPlaceholder" class="month-cal" style="display:flex;align-items:center;justify-content:center;min-height:320px;flex-direction:column;gap:0.75rem;color:var(--text3);">
+        <i data-lucide="mouse-pointer-click" style="width:36px;height:36px;opacity:0.4;"></i>
+        <p style="font-size:0.85rem;">Selecione um módulo e uma semana para ver o calendário</p>
+      </div>
+
+      <!-- Month Calendar -->
+      <div class="month-cal" id="calCard" style="display:none;">
+        <div class="month-cal-nav">
+          <button class="month-cal-btn" onclick="changeMonth(-1)">
+            <i data-lucide="chevron-left" style="width:15px;height:15px;"></i>
+          </button>
+          <span class="month-cal-title" id="calTitle"></span>
+          <button class="month-cal-btn" onclick="changeMonth(1)">
+            <i data-lucide="chevron-right" style="width:15px;height:15px;"></i>
+          </button>
+        </div>
+        <div class="month-grid" id="calGrid"></div>
+      </div>
+
+      <!-- Time slots -->
+      <div id="timeSlotsCard" style="display:none;" class="month-cal">
+        <div class="month-cal-nav" style="border-bottom:none;padding-bottom:0;">
+          <span class="month-cal-title" id="timeSlotTitle">Horários disponíveis</span>
+          <span style="font-size:0.75rem;color:var(--text3);">
+            <i data-lucide="clock" style="width:12px;height:12px;display:inline;vertical-align:middle;"></i> 1 hora por slot
+          </span>
+        </div>
+        <div class="time-grid" id="timeGrid"></div>
+      </div>
+
+      <!-- Confirm panel -->
+      <div class="confirm-panel" id="confirmPanel" style="display:none;">
+        <div style="font-size:0.82rem;font-weight:700;color:var(--text);margin-bottom:0.75rem;">
+          <i data-lucide="check-circle" style="width:14px;height:14px;display:inline;vertical-align:middle;color:var(--primary);"></i>
+          Confirmar Agendamento
+        </div>
+        <div class="confirm-summary" id="confirmSummary"></div>
+        <div class="confirm-inputs">
+          <div class="confirm-input-group">
+            <label>Discord (opcional)</label>
+            <input type="text" id="discordInput" placeholder="usuario ou @usuario">
+          </div>
+          <div class="confirm-input-group">
+            <label>Observações (opcional)</label>
+            <input type="text" id="notesInput" placeholder="O que quer revisar?">
+          </div>
+        </div>
+        <button class="btn-primary" id="confirmBookBtn" onclick="confirmBooking()" style="width:100%;">
+          <i data-lucide="send" style="width:15px;height:15px;display:inline;vertical-align:middle;"></i> Confirmar Call
+        </button>
+        <div id="bookingFeedback" class="booking-feedback"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const AVAIL = {{ avail_map|safe }};
+const BOOKED = {{ booked_slots|safe }};
+const ALL_WEEKS = {{ unbooked_weeks|safe }};
+
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+let selModuleId = null, selWeekNum = null;
+let selDate = null, selTime = null;
+let calYear, calMonth;
+
+const now = new Date();
+calYear = now.getFullYear();
+calMonth = now.getMonth();
+
+function fmtDate(y, m, d) {
+  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+/* ── Module selection ── */
+function selectModule(mid) {
+  selModuleId = mid;
+  selWeekNum = null; selDate = null; selTime = null;
+
+  document.querySelectorAll('.module-card').forEach(c => c.classList.remove('active'));
+  const card = document.querySelector(`.module-card[data-mid="${mid}"]`);
+  if (card) card.classList.add('active');
+
+  const weeks = ALL_WEEKS.filter(w => w.module_id === mid);
+  const wl = document.getElementById('weekList');
+  wl.innerHTML = '';
+  weeks.forEach(w => {
+    const item = document.createElement('div');
+    item.className = 'week-item';
+    item.dataset.wnum = w.week_number;
+    item.innerHTML = `<span class="week-dot"></span> Semana ${w.week_number} <span style="color:var(--text3);font-size:0.75rem;margin-left:auto;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${w.week_title}</span>`;
+    item.addEventListener('click', () => selectWeek(w.week_number));
+    wl.appendChild(item);
+  });
+
+  document.getElementById('weekSection').style.display = weeks.length ? 'block' : 'none';
+  document.getElementById('calCard').style.display = 'none';
+  document.getElementById('calPlaceholder').style.display = weeks.length ? 'none' : 'flex';
+  document.getElementById('timeSlotsCard').style.display = 'none';
+  document.getElementById('confirmPanel').style.display = 'none';
+}
+
+/* ── Week selection ── */
+function selectWeek(wnum) {
+  selWeekNum = wnum;
+  selDate = null; selTime = null;
+
+  document.querySelectorAll('.week-item').forEach(i => i.classList.remove('active'));
+  const item = document.querySelector(`.week-item[data-wnum="${wnum}"]`);
+  if (item) item.classList.add('active');
+
+  document.getElementById('calPlaceholder').style.display = 'none';
+  document.getElementById('calCard').style.display = 'block';
+  document.getElementById('timeSlotsCard').style.display = 'none';
+  document.getElementById('confirmPanel').style.display = 'none';
+  renderCalendar();
+}
+
+/* ── Month calendar ── */
+function changeMonth(dir) {
+  calMonth += dir;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  selDate = null; selTime = null;
+  document.getElementById('timeSlotsCard').style.display = 'none';
+  document.getElementById('confirmPanel').style.display = 'none';
+  renderCalendar();
+}
+
+function renderCalendar() {
+  document.getElementById('calTitle').textContent = `${MONTHS_PT[calMonth]} ${calYear}`;
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  // DOW headers inside the same grid
+  ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'month-dow';
+    h.textContent = d;
+    grid.appendChild(h);
+  });
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const firstDay = new Date(calYear, calMonth, 1);
+  // Monday-based: 0=Mon … 6=Sun
+  let startDow = firstDay.getDay() - 1;
+  if (startDow < 0) startDow = 6;
+
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const prevDays = new Date(calYear, calMonth, 0).getDate();
+
+  // Previous month padding
+  for (let i = startDow - 1; i >= 0; i--) {
+    const cell = document.createElement('div');
+    cell.className = 'month-cell other-month';
+    cell.innerHTML = `<span class="cell-num">${prevDays - i}</span>`;
+    grid.appendChild(cell);
+  }
+
+  // Current month days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(calYear, calMonth, d);
+    const dow = date.getDay(); // 0=Sun
+    const dateStr = fmtDate(calYear, calMonth, d);
+    const isPast = date < today;
+    const isToday = date.getTime() === today.getTime();
+    const isSelected = selDate === dateStr;
+    const hasAvail = AVAIL[dow] && AVAIL[dow].length > 0;
+
+    // Check if any slot on this day is still free
+    const allSlotsTaken = hasAvail && !isPast && AVAIL[dow].every(slot => {
+      const sh = parseInt(slot.start), eh = parseInt(slot.end);
+      for (let h = sh; h < eh; h++) {
+        const t = `${String(h).padStart(2,'0')}:00`;
+        if (!BOOKED.some(b => b.date === dateStr && b.time === t)) return false;
+      }
+      return true;
+    });
+
+    const cell = document.createElement('div');
+    cell.className = 'month-cell';
+    if (isPast) cell.classList.add('past');
+    if (isToday) cell.classList.add('today');
+    if (isSelected) cell.classList.add('selected');
+    if (hasAvail && !isPast) {
+      cell.classList.add('available');
+      if (allSlotsTaken) cell.classList.add('booked-all');
+    }
+
+    cell.innerHTML = `<span class="cell-num">${d}</span>${hasAvail && !isPast ? '<span class="cell-dot"></span>' : ''}`;
+
+    if (hasAvail && !isPast && selWeekNum !== null) {
+      cell.addEventListener('click', () => selectDate(dateStr, dow, d));
+    }
+    grid.appendChild(cell);
+  }
+
+  // Next month padding to complete grid
+  const total = startDow + daysInMonth;
+  const remainder = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= remainder; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'month-cell other-month';
+    cell.innerHTML = `<span class="cell-num">${i}</span>`;
+    grid.appendChild(cell);
+  }
+  lucide.createIcons();
+}
+
+/* ── Date selection → time slots ── */
+function selectDate(dateStr, dow, dayNum) {
+  selDate = dateStr;
+  selTime = null;
+
+  document.querySelectorAll('.month-cell').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+
+  const slots = AVAIL[dow] || [];
+  const tg = document.getElementById('timeGrid');
+  tg.innerHTML = '';
+  let anyFree = false;
+
+  slots.forEach(slot => {
+    const sh = parseInt(slot.start), eh = parseInt(slot.end);
+    for (let h = sh; h < eh; h++) {
+      const ts = `${String(h).padStart(2,'0')}:00`;
+      const isBooked = BOOKED.some(b => b.date === dateStr && b.time === ts);
+      const btn = document.createElement('button');
+      btn.className = 'ts-btn' + (isBooked ? ' booked' : '');
+      btn.textContent = ts;
+      btn.disabled = isBooked;
+      if (!isBooked) {
+        anyFree = true;
+        btn.addEventListener('click', () => pickTime(ts, btn, dayNum));
+      }
+      tg.appendChild(btn);
+    }
+  });
+
+  document.getElementById('timeSlotTitle').textContent =
+    `${dayNum} de ${MONTHS_SHORT[calMonth]} — Horários disponíveis`;
+  document.getElementById('timeSlotsCard').style.display = 'block';
+  document.getElementById('confirmPanel').style.display = 'none';
+  document.getElementById('timeSlotsCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  lucide.createIcons();
+}
+
+/* ── Time selection → confirm panel ── */
+function pickTime(ts, btn, dayNum) {
+  selTime = ts;
+  document.querySelectorAll('.ts-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+
+  const week = ALL_WEEKS.find(w => w.module_id === selModuleId && w.week_number === selWeekNum);
+  const modName = week ? `${week.module_icon} ${week.module_name}` : '';
+  const wkLabel = selWeekNum ? `Semana ${selWeekNum}` : '';
+  const dateLabel = `${dayNum} ${MONTHS_SHORT[calMonth]} ${calYear}`;
+
+  document.getElementById('confirmSummary').innerHTML = `
+    <span class="confirm-tag">${modName}</span>
+    <span class="confirm-tag">${wkLabel}</span>
+    <span class="confirm-tag"><i data-lucide="calendar" style="width:12px;height:12px;display:inline;vertical-align:middle;"></i> ${dateLabel}</span>
+    <span class="confirm-tag"><i data-lucide="clock" style="width:12px;height:12px;display:inline;vertical-align:middle;"></i> ${ts}h</span>
+  `;
+  document.getElementById('confirmPanel').style.display = 'block';
+  document.getElementById('confirmPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  lucide.createIcons();
+}
+
+/* ── Book ── */
+async function confirmBooking() {
+  const btn = document.getElementById('confirmBookBtn');
+  const feedback = document.getElementById('bookingFeedback');
+
+  if (!selModuleId || selWeekNum === null || !selDate || !selTime) {
+    feedback.className = 'booking-feedback error';
+    feedback.textContent = 'Selecione módulo, semana, data e horário.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader" style="width:15px;height:15px;display:inline;vertical-align:middle;"></i> Agendando...';
+  lucide.createIcons();
+
+  try {
+    const res = await fetch('/book-call', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        date: selDate, time: selTime,
+        module_id: selModuleId, week_number: selWeekNum,
+        discord: document.getElementById('discordInput').value,
+        notes: document.getElementById('notesInput').value
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      feedback.className = 'booking-feedback success';
+      feedback.innerHTML = '<i data-lucide="check-circle" style="width:14px;height:14px;display:inline;vertical-align:middle;"></i> ' + data.message;
+      setTimeout(() => location.reload(), 1600);
+    } else {
+      feedback.className = 'booking-feedback error';
+      feedback.textContent = data.message;
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="send" style="width:15px;height:15px;display:inline;vertical-align:middle;"></i> Confirmar Call';
+    }
+  } catch {
+    feedback.className = 'booking-feedback error';
+    feedback.textContent = 'Erro de conexão.';
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="send" style="width:15px;height:15px;display:inline;vertical-align:middle;"></i> Confirmar Call';
+  }
+  lucide.createIcons();
+}
+
+renderCalendar();
+lucide.createIcons();
+</script>
+{% endblock %}

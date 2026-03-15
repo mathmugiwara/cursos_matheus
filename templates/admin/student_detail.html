@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}{{ student.username }} — Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner" style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+    <a href="{{ url_for('admin_students') }}" class="btn-sm secondary">← Alunos</a>
+    <div style="display:flex; align-items:center; gap:0.75rem;">
+      <div class="user-avatar" style="width:44px; height:44px; border-radius:12px; font-size:1.1rem;">
+        {{ student.username[0].upper() }}
+      </div>
+      <div>
+        <h1>{{ student.username }}</h1>
+        <p>{{ student.email or 'Sem e-mail' }} · Desde {{ student.created_at.strftime('%d/%m/%Y') }}</p>
+      </div>
+    </div>
+    <div style="margin-left:auto; display:flex; gap:0.5rem; flex-wrap:wrap;">
+      <button class="btn-sm primary" onclick="openModal('modal-assign')">+ Atribuir Módulo</button>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+<div class="page-body-inner">
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; align-items:start;">
+
+    <!-- Modules -->
+    <div>
+      <h2 style="font-size:0.8rem; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:1rem;">Módulos Atribuídos</h2>
+
+      {% if modules_data %}
+        {% for item in modules_data %}
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.5rem; margin-bottom:1rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+              <div style="display:flex; align-items:center; gap:0.75rem;">
+                <span style="font-size:1.3rem;">{{ item.module.icon }}</span>
+                <div>
+                  <div style="font-weight:700; font-size:0.95rem; color:var(--text);">{{ item.module.short_name }}</div>
+                  <div style="font-size:0.72rem; color:var(--text3);">
+                    R$ {{ "%.2f"|format(item.um.paid_amount) }} · {{ item.um.assigned_at.strftime('%d/%m/%Y') }}
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <span class="badge {{ 'badge-green' if item.progress == 100 else 'badge-blue' if item.progress >= 50 else 'badge-purple' }}">
+                  {{ item.progress }}%
+                </span>
+                <form method="POST" action="{{ url_for('admin_remove_module') }}" style="display:inline;"
+                      onsubmit="return confirm('Remover acesso a este módulo?')">
+                  <input type="hidden" name="student_id" value="{{ student.id }}">
+                  <input type="hidden" name="module_id" value="{{ item.module.id }}">
+                  <button type="submit" class="btn-sm danger" title="Remover acesso">✕</button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="progress-row" style="margin-bottom:0.4rem;">
+              <span class="progress-label">{{ item.completed }}/{{ item.total }} aulas</span>
+            </div>
+            <div class="progress-bar-track" style="margin-bottom:1rem;">
+              <div class="progress-bar-fill {{ item.module.color }}" style="width:{{ item.progress }}%;"></div>
+            </div>
+
+            <!-- Lessons breakdown -->
+            <div style="display:flex; flex-direction:column; gap:0.5rem;">
+              {% for ld in item.details %}
+                <div style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem; background:var(--bg2); border-radius:8px;">
+                  <span style="font-size:0.75rem; {{ 'color:var(--green)' if ld.completed else 'color:var(--text3)' }}">
+                    {% if ld.completed %}<i data-lucide="check-circle" style="width:14px;height:14px;"></i>{% else %}<i data-lucide="square" style="width:14px;height:14px;"></i>{% endif %}
+                  </span>
+                  <span style="font-size:0.8rem; color:{{ 'var(--text)' if ld.completed else 'var(--text2)' }}; flex:1;">
+                    {{ ld.lesson.title }}
+                  </span>
+                  {% if ld.ex_total > 0 %}
+                    <span style="font-size:0.7rem; color:var(--text3);">
+                      {{ ld.ex_passed }}/{{ ld.ex_total }} ex
+                    </span>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:2rem; text-align:center; color:var(--text3);">
+          <i data-lucide="book-open" style="width:32px;height:32px;color:var(--text3);margin-bottom:0.75rem;"></i>
+          <p style="font-size:0.85rem;">Nenhum módulo atribuído.</p>
+          <button class="btn-sm primary" style="margin-top:0.75rem;" onclick="openModal('modal-assign')">
+            + Atribuir Módulo
+          </button>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Right: Stats + Available modules -->
+    <div>
+      <!-- Quick stats -->
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.5rem; margin-bottom:1.25rem;">
+        <div style="font-size:0.8rem; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:1rem;">Resumo do Aluno</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+          <div style="background:var(--bg2); border-radius:var(--radius); padding:0.85rem; text-align:center;">
+            <div style="font-size:1.4rem; font-weight:800; color:var(--text);">{{ modules_data|length }}</div>
+            <div style="font-size:0.72rem; color:var(--text3);">Módulos</div>
+          </div>
+          {% set total_completed = modules_data|sum(attribute='completed') %}
+          {% set total_lessons = modules_data|sum(attribute='total') %}
+          <div style="background:var(--bg2); border-radius:var(--radius); padding:0.85rem; text-align:center;">
+            <div style="font-size:1.4rem; font-weight:800; color:var(--green);">{{ total_completed }}</div>
+            <div style="font-size:0.72rem; color:var(--text3);">Aulas Feitas</div>
+          </div>
+          {% set total_paid = modules_data|sum(attribute='um.paid_amount') %}
+          <div style="background:var(--bg2); border-radius:var(--radius); padding:0.85rem; text-align:center;">
+            <div style="font-size:1.2rem; font-weight:800; color:var(--orange);">R$ {{ "%.0f"|format(total_paid) }}</div>
+            <div style="font-size:0.72rem; color:var(--text3);">Receita</div>
+          </div>
+          <div style="background:var(--bg2); border-radius:var(--radius); padding:0.85rem; text-align:center;">
+            <div style="font-size:1.4rem; font-weight:800; color:var(--cyan);">
+              {{ ((total_completed / total_lessons) * 100)|int if total_lessons > 0 else 0 }}%
+            </div>
+            <div style="font-size:0.72rem; color:var(--text3);">Conclusão</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Available modules to assign -->
+      {% set has_unassigned = false %}
+      {% for mod in all_modules %}{% if mod.id not in assigned_ids %}{% set has_unassigned = true %}{% endif %}{% endfor %}
+      {% if has_unassigned %}
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.5rem;">
+          <div style="font-size:0.8rem; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:1rem;">Módulos Disponíveis</div>
+          {% for mod in all_modules %}
+            {% if mod.id not in assigned_ids %}
+            <div style="display:flex; align-items:center; gap:0.75rem; padding:0.75rem; background:var(--bg2); border-radius:10px; margin-bottom:0.5rem;">
+              <span style="font-size:1.2rem;">{{ mod.icon }}</span>
+              <div style="flex:1;">
+                <div style="font-size:0.85rem; font-weight:700; color:var(--text);">{{ mod.short_name }}</div>
+                <div style="font-size:0.72rem; color:var(--text3);">R$ {{ "%.2f"|format(mod.price) }}</div>
+              </div>
+              <form method="POST" action="{{ url_for('admin_assign_module') }}" style="display:inline;">
+                <input type="hidden" name="student_id" value="{{ student.id }}">
+                <input type="hidden" name="module_id" value="{{ mod.id }}">
+                <input type="hidden" name="paid_amount" value="{{ mod.price }}">
+                <button type="submit" class="btn-sm primary">+ Atribuir</button>
+              </form>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Modal: Assign Module -->
+<div class="modal-backdrop" id="modal-assign">
+  <div class="modal-box">
+    <h3><i data-lucide="book-plus" style="width:18px;height:18px;display:inline;vertical-align:middle;"></i> Atribuir Módulo</h3>
+    <form method="POST" action="{{ url_for('admin_assign_module') }}">
+      <input type="hidden" name="student_id" value="{{ student.id }}">
+      <div class="form-group">
+        <label>Módulo</label>
+        <select name="module_id" id="modal-module-select" required>
+          <option value="">Selecione um módulo...</option>
+          {% for mod in all_modules %}
+            {% if mod.id not in assigned_ids %}
+              <option value="{{ mod.id }}" data-price="{{ mod.price }}">
+                {{ mod.icon }} {{ mod.name }} — R$ {{ "%.2f"|format(mod.price) }}
+              </option>
+            {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Valor Pago (R$)</label>
+        <input type="number" name="paid_amount" id="modal-price-input"
+               step="0.01" min="0" placeholder="0.00" value="0">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('modal-assign')">Cancelar</button>
+        <button type="submit" class="btn-primary">Atribuir</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

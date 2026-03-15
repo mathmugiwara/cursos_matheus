@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}MatheusDevCursos{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='55' text-anchor='middle' dominant-baseline='middle' font-family='monospace' font-size='50' font-weight='bold' fill='white'>&lt;/&gt;</text></svg>">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <!-- CodeMirror -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+<script>
+  (function(){
+    const t = localStorage.getItem('theme');
+    if(t) document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <!-- Brand -->
+    <div class="sb-brand">
+      <a href="{{ url_for('index') }}" class="sb-brand-link">
+        <div class="sb-brand-icon"><i data-lucide="code-2" style="width:18px;height:18px;color:#fff;"></i></div>
+        <div class="sb-brand-text">
+          <strong>MatheusDevCursos</strong>
+          <span>Plataforma de Estudos</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- User card -->
+    <div class="sb-user">
+      <div class="sb-user-avatar">{{ current_user.username[0].upper() }}</div>
+      <div class="sb-user-info">
+        <strong>{{ current_user.username }}</strong>
+        <small>{{ current_user.email or '' }}</small>
+      </div>
+      {% if current_user.role == 'admin' %}
+        <span class="sb-badge sb-badge-admin">Admin</span>
+      {% else %}
+        <span class="sb-badge sb-badge-student">Aluno</span>
+      {% endif %}
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sb-nav">
+      {% if current_user.role == 'admin' %}
+        <div class="sb-section-label">Administração</div>
+        <a href="{{ url_for('admin_dashboard') }}" class="sb-link{{ ' active' if request.endpoint == 'admin_dashboard' }}">
+          <i data-lucide="layout-dashboard"></i><span>Dashboard</span>
+        </a>
+        <a href="{{ url_for('admin_students') }}" class="sb-link{{ ' active' if request.endpoint in ['admin_students', 'admin_student_detail'] }}">
+          <i data-lucide="users"></i><span>Alunos</span>
+        </a>
+        <a href="{{ url_for('admin_revenue') }}" class="sb-link{{ ' active' if request.endpoint == 'admin_revenue' }}">
+          <i data-lucide="wallet"></i><span>Receita</span>
+        </a>
+        <a href="{{ url_for('admin_calls') }}" class="sb-link{{ ' active' if request.endpoint == 'admin_calls' }}">
+          <i data-lucide="calendar-clock"></i><span>Calls</span>
+        </a>
+        <a href="{{ url_for('admin_projetos') }}" class="sb-link{{ ' active' if request.endpoint == 'admin_projetos' }}">
+          <i data-lucide="hammer"></i><span>Projetos</span>
+        </a>
+      {% else %}
+        <div class="sb-section-label">Estudos</div>
+        <a href="{{ url_for('dashboard') }}" class="sb-link{{ ' active' if request.endpoint == 'dashboard' }}">
+          <i data-lucide="home"></i><span>Início</span>
+        </a>
+        <a href="{{ url_for('roadmap') }}" class="sb-link{{ ' active' if request.endpoint == 'roadmap' }}">
+          <i data-lucide="map"></i><span>Roadmap</span>
+        </a>
+        <a href="{{ url_for('profile') }}" class="sb-link{{ ' active' if request.endpoint == 'profile' }}">
+          <i data-lucide="trending-up"></i><span>Meu Progresso</span>
+        </a>
+        <a href="{{ url_for('schedule_call') }}" class="sb-link{{ ' active' if request.endpoint == 'schedule_call' }}">
+          <i data-lucide="calendar-clock"></i><span>Agendar Call</span>
+        </a>
+        <a href="{{ url_for('projeto_pratico') }}" class="sb-link{{ ' active' if request.endpoint == 'projeto_pratico' }}">
+          <i data-lucide="hammer"></i><span>Projeto Prático</span>
+        </a>
+        <div class="sb-section-label" style="margin-top:0.5rem;">Conta</div>
+        <a href="{{ url_for('minha_conta') }}" class="sb-link{{ ' active' if request.endpoint == 'minha_conta' }}">
+          <i data-lucide="user-cog"></i><span>Minha Conta</span>
+        </a>
+      {% endif %}
+    </nav>
+
+    <!-- Footer -->
+    <div class="sb-footer">
+      <div class="sb-contact">
+        <div class="sb-section-label" style="padding:0;margin-bottom:0.45rem;">Contato</div>
+        <a href="https://wa.me/5515981407589" target="_blank" class="sb-contact-link sb-wa">
+          <i data-lucide="message-circle"></i> (15) 98140-7589
+        </a>
+        <a href="https://discord.com/users/matheusdeoliveira1936" target="_blank" class="sb-contact-link sb-dc">
+          <i data-lucide="headphones"></i> matheusdeoliveira1936
+        </a>
+      </div>
+      <div class="sb-actions">
+        <button class="sb-action-btn" onclick="toggleTheme()" title="Alternar tema">
+          <i data-lucide="sun" class="theme-icon-light"></i>
+          <i data-lucide="moon" class="theme-icon-dark"></i>
+        </button>
+        <a href="{{ url_for('logout') }}" class="sb-action-btn sb-logout" title="Sair">
+          <i data-lucide="log-out"></i>
+          <span>Sair</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <!-- Flash Messages -->
+    <div style="padding: 0 2rem; padding-top: 1rem; max-width:1100px; margin:0 auto;">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="flash-msg flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+    </div>
+
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>lucide.createIcons();</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

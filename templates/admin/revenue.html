@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Receita — MatheusDevCursos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner">
+  <h1><i data-lucide="wallet" style="width:22px;height:22px;display:inline;vertical-align:middle;"></i> Receita</h1>
+  <p>Acompanhe suas vendas e receita por módulo</p>
+  </div>
+</div>
+
+<div class="page-body">
+<div class="page-body-inner">
+
+  <!-- Stats -->
+  <div class="stats-grid" style="margin-bottom:2rem;">
+    <div class="stat-card green">
+      <div class="stat-icon"><i data-lucide="wallet" style="width:24px;height:24px;"></i></div>
+      <div class="stat-value">R$ {{ "%.2f"|format(total_revenue) }}</div>
+      <div class="stat-label">Receita Total</div>
+    </div>
+    <div class="stat-card cyan">
+      <div class="stat-icon"><i data-lucide="shopping-cart" style="width:24px;height:24px;"></i></div>
+      <div class="stat-value">{{ total_sales }}</div>
+      <div class="stat-label">Vendas</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-icon"><i data-lucide="bar-chart-3" style="width:24px;height:24px;"></i></div>
+      <div class="stat-value">R$ {{ "%.2f"|format(total_revenue / total_sales) if total_sales > 0 else "0.00" }}</div>
+      <div class="stat-label">Ticket Médio</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-icon"><i data-lucide="target" style="width:24px;height:24px;"></i></div>
+      <div class="stat-value">{{ module_stats|length }}</div>
+      <div class="stat-label">Módulos Ativos</div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem; align-items:start;">
+
+    <!-- Revenue by module -->
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden;">
+      <div class="section-card-header" style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); font-size:0.9rem; font-weight:700;">
+        <i data-lucide="package" style="width:16px;height:16px;display:inline;vertical-align:middle;"></i> Receita por Módulo
+      </div>
+      <div style="padding:1.5rem;">
+        {% for item in module_stats %}
+          <div style="margin-bottom:{{ '1.5rem' if not loop.last else '0' }};">
+            <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.6rem;">
+              <span style="font-size:1.3rem;">{{ item.module.icon }}</span>
+              <div style="flex:1;">
+                <div style="font-size:0.9rem; font-weight:700; color:var(--text);">{{ item.module.short_name }}</div>
+                <div style="font-size:0.75rem; color:var(--text3);">{{ item.sales }} venda{{ 's' if item.sales != 1 }} · média R$ {{ "%.2f"|format(item.avg) }}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:1.1rem; font-weight:800; color:var(--green);">R$ {{ "%.2f"|format(item.revenue) }}</div>
+              </div>
+            </div>
+            {% if total_revenue > 0 %}
+              {% set pct = ((item.revenue / total_revenue) * 100)|int %}
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill {{ item.module.color }}" style="width:{{ pct }}%;"></div>
+              </div>
+              <div style="font-size:0.7rem; color:var(--text3); margin-top:0.25rem;">{{ pct }}% do total</div>
+            {% endif %}
+          </div>
+        {% else %}
+          <p style="color:var(--text3); font-size:0.85rem;">Sem dados de receita ainda.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Revenue chart -->
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden;">
+      <div class="section-card-header" style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); font-size:0.9rem; font-weight:700;">
+        <i data-lucide="pie-chart" style="width:16px;height:16px;display:inline;vertical-align:middle;"></i> Distribuição
+      </div>
+      <div style="padding:1.5rem; display:flex; align-items:center; justify-content:center;">
+        {% if total_revenue > 0 %}
+          <div style="position:relative; width:180px; height:180px;">
+            <canvas id="pieChart"></canvas>
+          </div>
+        {% else %}
+          <div style="text-align:center; color:var(--text3); padding:2rem;">
+            <i data-lucide="bar-chart-3" style="width:32px;height:32px;color:var(--text3);"></i>
+            <p style="font-size:0.85rem; margin-top:0.5rem;">Sem vendas ainda</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- All sales -->
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden;">
+    <div class="section-card-header" style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); font-size:0.9rem; font-weight:700;">
+      <i data-lucide="list" style="width:16px;height:16px;display:inline;vertical-align:middle;"></i> Todas as Vendas
+    </div>
+    {% if all_sales %}
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Aluno</th>
+            <th>Módulo</th>
+            <th>Valor</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for um, user, mod in all_sales %}
+            <tr>
+              <td>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <div class="user-avatar" style="width:28px; height:28px; border-radius:7px; font-size:0.75rem; flex-shrink:0;">
+                    {{ user.username[0].upper() }}
+                  </div>
+                  <span style="font-weight:600; color:var(--text);">{{ user.username }}</span>
+                </div>
+              </td>
+              <td>
+                <span>{{ mod.icon }}</span>
+                <span style="font-size:0.85rem;">{{ mod.short_name }}</span>
+              </td>
+              <td>
+                <span style="font-weight:700; color:var(--green);">R$ {{ "%.2f"|format(um.paid_amount) }}</span>
+              </td>
+              <td style="font-size:0.82rem; color:var(--text2);">
+                {{ um.assigned_at.strftime('%d/%m/%Y') }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty-state" style="padding:2rem;">
+        <i data-lucide="wallet" style="width:32px;height:32px;color:var(--text3);"></i>
+        <p>Nenhuma venda registrada ainda.</p>
+        <p style="font-size:0.8rem; margin-top:0.25rem;">Atribua módulos aos alunos para registrar receita.</p>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+{% if total_revenue > 0 %}
+const pieCtx = document.getElementById('pieChart').getContext('2d');
+new Chart(pieCtx, {
+  type: 'doughnut',
+  data: {
+    labels: [{% for item in module_stats %}'{{ item.module.short_name }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{
+      data: [{% for item in module_stats %}{{ item.revenue }}{% if not loop.last %},{% endif %}{% endfor %}],
+      backgroundColor: ['rgba(124,58,237,0.7)', 'rgba(34,211,238,0.7)', 'rgba(16,185,129,0.7)'],
+      borderColor: ['rgba(124,58,237,1)', 'rgba(34,211,238,1)', 'rgba(16,185,129,1)'],
+      borderWidth: 2,
+    }]
+  },
+  options: {
+    responsive: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 12 } },
+      tooltip: { callbacks: { label: ctx => `R$ ${ctx.parsed.toFixed(2)}` } }
+    },
+    cutout: '60%',
+  }
+});
+{% endif %}
+</script>
+{% endblock %}

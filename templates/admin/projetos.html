@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Projetos Práticos — Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-inner" style="display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <h1><i data-lucide="hammer" style="width:22px;height:22px;display:inline;vertical-align:middle;"></i> Projetos Práticos</h1>
+      <p>Sessões de 2 horas agendadas pelos alunos.</p>
+    </div>
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+  </div>
+</div>
+
+<div class="page-body">
+<div class="page-body-inner">
+
+  {% if sessions %}
+  <div class="section-card">
+    <div class="section-card-header">
+      <i data-lucide="list" style="width:16px;height:16px;"></i> Sessões Agendadas
+    </div>
+    <div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Aluno</th>
+            <th>Data</th>
+            <th>Horário</th>
+            <th>Projeto</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sessions %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:0.5rem;">
+                <div class="user-avatar" style="width:28px;height:28px;font-size:0.7rem;border-radius:6px;">{{ s.user_rel.username[0].upper() }}</div>
+                <span style="font-weight:600;color:var(--text);">{{ s.user_rel.username }}</span>
+              </div>
+            </td>
+            <td>{{ s.scheduled_date.strftime('%d/%m/%Y') }}</td>
+            <td>{{ s.scheduled_time }}h – {{ '%02d' % ((s.scheduled_time[:2]|int) + 2) }}:00h</td>
+            <td style="max-width:240px;">
+              <div style="font-weight:600;font-size:0.85rem;color:var(--text);">{{ s.project_title }}</div>
+              <div style="font-size:0.78rem;color:var(--text3);margin-top:0.2rem;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ s.project_description }}</div>
+              <button onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'"
+                style="background:none;border:none;color:var(--primary-light);font-size:0.75rem;cursor:pointer;padding:0;margin-top:0.2rem;">ver tudo ↓</button>
+              <div style="display:none;font-size:0.8rem;color:var(--text2);white-space:pre-wrap;margin-top:0.4rem;padding:0.5rem;background:var(--bg2);border-radius:6px;">{{ s.project_description }}</div>
+            </td>
+            <td><span class="call-status {{ s.status }}">{{ s.status }}</span></td>
+            <td>
+              <div style="display:flex;gap:0.25rem;flex-wrap:wrap;">
+                {% if s.status == 'pending' %}
+                  <form method="POST" action="{{ url_for('admin_update_projeto_status') }}" style="display:inline;">
+                    <input type="hidden" name="proj_id" value="{{ s.id }}">
+                    <input type="hidden" name="status" value="confirmed">
+                    <button type="submit" class="btn-sm primary" title="Confirmar">
+                      <i data-lucide="check" style="width:12px;height:12px;"></i> Confirmar
+                    </button>
+                  </form>
+                  <form method="POST" action="{{ url_for('admin_update_projeto_status') }}" style="display:inline;">
+                    <input type="hidden" name="proj_id" value="{{ s.id }}">
+                    <input type="hidden" name="status" value="cancelled">
+                    <button type="submit" class="btn-sm danger" title="Cancelar">
+                      <i data-lucide="x" style="width:12px;height:12px;"></i>
+                    </button>
+                  </form>
+                {% elif s.status == 'confirmed' %}
+                  <form method="POST" action="{{ url_for('admin_update_projeto_status') }}" style="display:inline;">
+                    <input type="hidden" name="proj_id" value="{{ s.id }}">
+                    <input type="hidden" name="status" value="completed">
+                    <button type="submit" class="btn-sm primary" title="Marcar como realizada">
+                      <i data-lucide="check-circle" style="width:12px;height:12px;"></i> Feita
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="section-card">
+    <div class="section-card-body" style="text-align:center;padding:3rem 1rem;color:var(--text3);">
+      <i data-lucide="hammer" style="width:40px;height:40px;margin-bottom:1rem;opacity:0.4;"></i>
+      <p>Nenhuma sessão de projeto agendada ainda.</p>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>if (typeof lucide !== 'undefined') lucide.createIcons();</script>
+{% endblock %}
